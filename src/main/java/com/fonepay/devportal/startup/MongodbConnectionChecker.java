@@ -23,22 +23,15 @@ public class MongodbConnectionChecker implements CommandLineRunner {
 
     @Override
     public void run(String @NonNull... args) {
-        System.out.println("==================================");
         try {
             // Verify MongoDB connection with ping command
             Document pingCommand = new Document("ping", 1);
             Document response = mongoTemplate.getDb().runCommand(pingCommand);
             String dbName = mongoTemplate.getDb().getName();
 
-            System.out.println(" MongoDB Connected Successfully!");
-            System.out.println(" Database : " + dbName);
-            System.out.println(" Status   : " + response.get("ok"));
-            log.info("MongoDB connected successfully to database [{}]", dbName);
+            log.info("MongoDB connected successfully to database [{}] with status [{}]", dbName, response.get("ok"));
         } catch (Exception e) {
-            System.err.println(" MongoDB Connection FAILED!");
-            System.err.println(" Error    : " + e.getMessage());
-            log.error("Failed to connect to MongoDB: ", e);
+            log.error("MongoDB connection FAILED: {}", e.getMessage(), e);
         }
-        System.out.println("==================================");
     }
 }
