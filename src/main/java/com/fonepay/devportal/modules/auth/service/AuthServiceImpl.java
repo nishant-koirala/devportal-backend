@@ -7,12 +7,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.fonepay.devportal.common.constant.enums.AuthStatus;
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
+import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
+import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.user.entity.User;
 import com.fonepay.devportal.modules.user.entity.UserSession;
@@ -33,6 +36,9 @@ public class AuthServiceImpl implements AuthService{
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthMapper authMapper;
+    private final OtpService otpService;
+    private final TempTokenService tempTokenService;
+    private final EmailService emailService;
     private final Clock clock;
 
     @Value("${jwt.expiration-ms:86400000}")
@@ -91,9 +97,23 @@ public class AuthServiceImpl implements AuthService{
         user.setLastLoginAt(now);
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user, sessionId);
+        // Check if user requires OTP (ADMIN and EDITOR roles)
+        if (user.requiresOtp()) {
+            // Generate OTP
+            String otpCode = otpService.generateOtp(user);
+            userRepository.save(user);
 
-        return authMapper.toAuthResponse(user, token, "Login successful");
+            // Send OTP via email
+            emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
+
+            // Generate temporary token for OTP verification flow
+            String tempToken = tempTokenService.generateTempToken(user.getUserId(), sessionId);
+            return authMapper.toAuthResponse(user, tempToken, "OTP sent to your email", AuthStatus.OTP_REQUIRED);
+        }
+
+        // No OTP required (DEVELOPER role)
+        String token = jwtUtil.generateToken(user, sessionId);
+        return authMapper.toAuthResponse(user, token, "Login successful", AuthStatus.LOGIN_SUCCESS);
     }
 
     @Override
@@ -112,6 +132,106 @@ public class AuthServiceImpl implements AuthService{
                 userSessionRepository.save(session);
                 log.info("User session revoked for sessionId: {}", sessionId);
             });
+        }
+    }
+
+    @Override
+    public OtpResponse requestOtp(String tempToken) {
+        if (!tempTokenService.validateTempToken(tempToken)) {
+            throw new UnauthorizedException("Invalid or expired temporary token");
+        }
+
+        String userId = tempTokenService.extractUserId(tempToken);
+        String sessionId = tempTokenService.extractSessionId(tempToken);
+
+        if (userId == null || sessionId == null) {
+            throw new UnauthorizedException("Invalid temporary token");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+
+        if (!user.requiresOtp()) {
+            throw new UnauthorizedException("OTP not required for this user role");
+        }
+
+        // Check if there's already a pending OTP
+        if (otpService.hasPendingOtp(user)) {
+            long remainingSeconds = otpService.getOtpRemainingSeconds(user);
+            return authMapper.toOtpResponse(
+                    "OTP already sent. Please check your email or wait for it to expire.",
+                    (int) remainingSeconds);
+        }
+
+        // Generate new OTP
+        String otpCode = otpService.generateOtp(user);
+        userRepository.save(user);
+
+        // Send OTP via email
+        emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
+
+        log.info("OTP resent for user: {}", userId);
+
+        return authMapper.toOtpResponse(
+                "OTP sent to your email",
+                (int) otpService.getOtpRemainingSeconds(user));
+    }
+
+    @Override
+    public AuthResponse verifyOtp(String tempToken, OtpVerifyRequest request) {
+        if (!tempTokenService.validateTempToken(tempToken)) {
+            throw new UnauthorizedException("Invalid or expired temporary token");
+        }
+
+        String userId = tempTokenService.extractUserId(tempToken);
+        String sessionId = tempTokenService.extractSessionId(tempToken);
+
+        if (userId == null || sessionId == null) {
+            throw new UnauthorizedException("Invalid temporary token");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+
+        if (!user.requiresOtp()) {
+            throw new UnauthorizedException("OTP verification not required for this user");
+        }
+
+        // Verify the OTP code
+        if (!otpService.verifyOtp(user, request.getCode())) {
+            userRepository.save(user);
+
+            if (user.getOtpStatus() == com.fonepay.devportal.common.constant.enums.OtpStatus.EXPIRED) {
+                throw new UnauthorizedException("OTP has expired. Please request a new one.");
+            } else if (user.getOtpStatus() == com.fonepay.devportal.common.constant.enums.OtpStatus.FAILED) {
+                throw new UnauthorizedException("Max OTP attempts exceeded. Please request a new OTP.");
+            } else {
+                int remainingAttempts = 3 - user.getOtpAttempts(); // maxAttempts is 3
+                throw new UnauthorizedException("Invalid OTP code. " + remainingAttempts + " attempts remaining.");
+            }
+        }
+
+        // OTP verified successfully
+        userRepository.save(user);
+        log.info("OTP verification successful for user: {}", userId);
+
+        // Clear OTP data
+        otpService.clearOtp(user);
+        userRepository.save(user);
+
+        // Generate full JWT token
+        String token = jwtUtil.generateToken(user, sessionId);
+
+        return authMapper.toAuthResponse(user, token, "Login successful", AuthStatus.LOGIN_SUCCESS);
+    }
+
+    @Override
+    public String extractUserIdFromToken(String token) {
+        try {
+            return jwtUtil.extractUserId(token);
+        } catch (Exception e) {
+            log.error("Failed to extract user ID from token", e);
+            return null;
         }
     }
 }

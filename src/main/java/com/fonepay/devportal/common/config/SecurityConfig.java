@@ -37,8 +37,18 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/verify-email").permitAll()
+                        // OTP endpoints require a valid temp token (authenticated via header handled in controller)
+                        .requestMatchers("/api/v1/auth/otp/**").permitAll()
+                        // Auth endpoints require authentication
                         .requestMatchers("/api/v1/auth/logout").authenticated()
+                        // Admin-only endpoints
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // CMS endpoints for Admin and Editor
+                        .requestMatchers("/api/v1/cms/**").hasAnyRole("ADMIN", "EDITOR")
+                        // Departments - any authenticated user
+                        .requestMatchers("/api/v1/departments/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

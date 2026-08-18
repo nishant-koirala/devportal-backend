@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -17,6 +18,8 @@ import com.fonepay.devportal.common.dto.ApiResponse;
 import com.fonepay.devportal.common.util.HttpRequestUtil;
 import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
+import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
+import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,6 +63,59 @@ public class AuthController {
                 .status(HttpStatus.OK.value())
                 .success(true)
                 .message("Logged out successfully")
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @PostMapping(ApiRoutes.Auth.OTP_REQUEST)
+    public ResponseEntity<ApiResponse<OtpResponse>> requestOtp(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.<OtpResponse>builder()
+                            .status(HttpStatus.UNAUTHORIZED.value())
+                            .success(false)
+                            .message("Invalid or missing Authorization header")
+                            .timestamp(LocalDateTime.now(clock))
+                            .build());
+        }
+
+        String tempToken = authHeader.substring(7);
+        OtpResponse response = authService.requestOtp(tempToken);
+
+        return ResponseEntity.ok(ApiResponse.<OtpResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("OTP sent")
+                .data(response)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @PostMapping(ApiRoutes.Auth.OTP_VERIFY)
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyOtp(
+            @Valid @RequestBody OtpVerifyRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.<AuthResponse>builder()
+                            .status(HttpStatus.UNAUTHORIZED.value())
+                            .success(false)
+                            .message("Invalid or missing Authorization header")
+                            .timestamp(LocalDateTime.now(clock))
+                            .build());
+        }
+
+        String tempToken = authHeader.substring(7);
+        AuthResponse authResponse = authService.verifyOtp(tempToken, request);
+
+        return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Login successful")
+                .data(authResponse)
                 .timestamp(LocalDateTime.now(clock))
                 .build());
     }
