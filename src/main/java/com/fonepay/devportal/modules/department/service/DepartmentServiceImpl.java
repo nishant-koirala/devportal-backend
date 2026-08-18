@@ -1,11 +1,12 @@
-package com.fonepay.devportal.department.service;
+package com.fonepay.devportal.modules.department.service;
 
 import com.fonepay.devportal.common.exception.DuplicateResourceException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
-import com.fonepay.devportal.department.dto.request.DepartmentRequestDto;
-import com.fonepay.devportal.department.dto.response.DepartmentResponseDto;
-import com.fonepay.devportal.department.entity.Department;
-import com.fonepay.devportal.department.repository.DepartmentRepository;
+import com.fonepay.devportal.modules.department.dto.request.DepartmentRequestDto;
+import com.fonepay.devportal.modules.department.dto.response.DepartmentResponseDto;
+import com.fonepay.devportal.modules.department.entity.Department;
+import com.fonepay.devportal.modules.department.repository.DepartmentRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

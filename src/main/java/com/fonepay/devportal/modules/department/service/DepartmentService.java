@@ -1,9 +1,9 @@
-package com.fonepay.devportal.department.service;
-
-import com.fonepay.devportal.department.dto.request.DepartmentRequestDto;
-import com.fonepay.devportal.department.dto.response.DepartmentResponseDto;
+package com.fonepay.devportal.modules.department.service;
 
 import java.util.List;
+
+import com.fonepay.devportal.modules.department.dto.request.DepartmentRequestDto;
+import com.fonepay.devportal.modules.department.dto.response.DepartmentResponseDto;
 
 public interface DepartmentService {
 

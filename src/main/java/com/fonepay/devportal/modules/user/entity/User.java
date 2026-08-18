@@ -1,4 +1,4 @@
-package com.fonepay.devportal.user.entity;
+package com.fonepay.devportal.modules.user.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;

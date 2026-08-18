@@ -1,13 +1,14 @@
-package com.fonepay.devportal.department.controller;
+package com.fonepay.devportal.modules.department.controller;
 
-import com.fonepay.devportal.department.dto.request.DepartmentRequestDto;
-import com.fonepay.devportal.department.dto.response.DepartmentResponseDto;
-import com.fonepay.devportal.department.service.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.fonepay.devportal.modules.department.dto.request.DepartmentRequestDto;
+import com.fonepay.devportal.modules.department.dto.response.DepartmentResponseDto;
+import com.fonepay.devportal.modules.department.service.DepartmentService;
 
 import java.util.List;
 
