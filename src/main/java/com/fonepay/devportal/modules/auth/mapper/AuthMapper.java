@@ -1,21 +1,17 @@
 package com.fonepay.devportal.modules.auth.mapper;
 
-import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
 import com.fonepay.devportal.modules.user.entity.User;
-import org.springframework.stereotype.Component;
 
-@Component
-public class AuthMapper {
+@Mapper(componentModel = "spring")
+public interface AuthMapper {
 
-    public RegistrationResponse toRegistrationResponse(User user) {
-        if (user == null) {
-            return null;
-        }
-
-        return RegistrationResponse.builder()
-                .userId(user.getUserId())
-                .email(user.getEmail())
-                .message("Registration successful. Please check your email to verify your account.")
-                .build();
-    }
+    @Mapping(target = "token", source = "token")
+    @Mapping(target = "message", source = "message")
+    @Mapping(target = "status", expression = "java(user.getStatus() != null ? user.getStatus().name() : null)")
+    @Mapping(target = "role", ignore = true)
+    AuthResponse toAuthResponse(User user, String token, String message);
 }

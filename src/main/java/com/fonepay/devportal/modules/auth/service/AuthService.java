@@ -1,10 +1,11 @@
 package com.fonepay.devportal.modules.auth.service;
 
-import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
-import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
+import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 
 public interface AuthService {
-    RegistrationResponse register(RegisterRequest request);
-    void verifyEmail(String token);
-    void resendVerificationEmail(String email);
+
+    AuthResponse login(LoginRequest request, String ipAddress, String userAgent);
+
+    void logout(String authHeader);
 }

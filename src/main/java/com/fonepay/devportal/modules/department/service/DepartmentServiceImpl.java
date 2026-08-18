@@ -2,9 +2,11 @@ package com.fonepay.devportal.modules.department.service;
 
 import com.fonepay.devportal.common.exception.DuplicateResourceException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
+import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.department.dto.request.DepartmentRequestDto;
 import com.fonepay.devportal.modules.department.dto.response.DepartmentResponseDto;
 import com.fonepay.devportal.modules.department.entity.Department;
+import com.fonepay.devportal.modules.department.mapper.DepartmentMapper;
 import com.fonepay.devportal.modules.department.repository.DepartmentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -13,8 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
+    private final DepartmentMapper departmentMapper;
 
     @Override
     public DepartmentResponseDto createDepartment(DepartmentRequestDto requestDto) {
@@ -32,7 +33,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         }
 
         Department department = Department.builder()
-                .departmentId(UUID.randomUUID().toString())
+                .departmentId(IdGenerator.nextUlid())
                 .departmentName(requestDto.getDepartmentName().trim())
                 .departmentDescription(requestDto.getDepartmentDescription())
                 .isActive(requestDto.getIsActive() != null ? requestDto.getIsActive() : true)
@@ -41,7 +42,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         Department savedDepartment = departmentRepository.save(department);
         log.info("Department created successfully with ID: {}", savedDepartment.getDepartmentId());
-        return mapToResponseDto(savedDepartment);
+        return departmentMapper.toResponseDto(savedDepartment);
     }
 
     @Override
@@ -53,16 +54,14 @@ public class DepartmentServiceImpl implements DepartmentService {
             departments = departmentRepository.findAll();
         }
 
-        return departments.stream()
-                .map(this::mapToResponseDto)
-                .collect(Collectors.toList());
+        return departmentMapper.toResponseDtoList(departments);
     }
 
     @Override
     public DepartmentResponseDto getDepartmentById(String departmentId) {
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + departmentId));
-        return mapToResponseDto(department);
+        return departmentMapper.toResponseDto(department);
     }
 
     @Override
@@ -86,7 +85,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         Department updatedDepartment = departmentRepository.save(existingDepartment);
         log.info("Department updated successfully with ID: {}", updatedDepartment.getDepartmentId());
-        return mapToResponseDto(updatedDepartment);
+        return departmentMapper.toResponseDto(updatedDepartment);
     }
 
     @Override
@@ -97,15 +96,5 @@ public class DepartmentServiceImpl implements DepartmentService {
         }
         departmentRepository.deleteById(departmentId);
         log.info("Department deleted with ID: {}", departmentId);
-    }
-
-    private DepartmentResponseDto mapToResponseDto(Department department) {
-        return DepartmentResponseDto.builder()
-                .departmentId(department.getDepartmentId())
-                .departmentName(department.getDepartmentName())
-                .departmentDescription(department.getDepartmentDescription())
-                .isActive(department.isActive())
-                .createdAt(department.getCreatedAt())
-                .build();
     }
 }

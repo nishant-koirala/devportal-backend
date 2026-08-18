@@ -1,72 +1,66 @@
 package com.fonepay.devportal.modules.auth.controller;
 
-import com.fonepay.devportal.common.dto.ApiResponse;
-import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
-import com.fonepay.devportal.modules.auth.dto.request.ResendVerificationRequest;
-import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
-import com.fonepay.devportal.modules.auth.service.AuthService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fonepay.devportal.common.constant.apis.ApiRoutes;
+import com.fonepay.devportal.common.dto.ApiResponse;
+import com.fonepay.devportal.common.util.HttpRequestUtil;
+import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
+import com.fonepay.devportal.modules.auth.service.AuthService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping(ApiRoutes.Auth.BASE)
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final Clock clock;
 
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<RegistrationResponse>> register(
-            @Valid @RequestBody RegisterRequest request) {
+    @PostMapping(ApiRoutes.Auth.LOGIN)
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
 
-        RegistrationResponse response = authService.register(request);
+        String ipAddress = HttpRequestUtil.getClientIp(httpRequest);
+        String userAgent = HttpRequestUtil.getUserAgent(httpRequest);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<RegistrationResponse>builder()
-                        .status(HttpStatus.CREATED.value())
-                        .success(true)
-                        .message("User registered successfully")
-                        .data(response)
-                        .timestamp(LocalDateTime.now(clock))
-                        .build()
-        );
+        AuthResponse authResponse = authService.login(request, ipAddress, userAgent);
+
+        return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Login successful")
+                .data(authResponse)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
     }
 
-    @GetMapping("/verify-email")
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam String token) {
+    @PostMapping(ApiRoutes.Auth.LOGOUT)
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
 
-        authService.verifyEmail(token);
+        authService.logout(authHeader);
 
-        return ResponseEntity.ok(
-                ApiResponse.<Void>builder()
-                        .status(HttpStatus.OK.value())
-                        .success(true)
-                        .message("Email verified successfully. Your account is now active.")
-                        .timestamp(LocalDateTime.now(clock))
-                        .build()
-        );
-    }
-
-    @PostMapping("/resend-verification")
-    public ResponseEntity<ApiResponse<Void>> resendVerification(
-            @Valid @RequestBody ResendVerificationRequest request) {
-
-        authService.resendVerificationEmail(request.getEmail());
-
-        return ResponseEntity.ok(
-                ApiResponse.<Void>builder()
-                        .status(HttpStatus.OK.value())
-                        .success(true)
-                        .message("Verification email resent successfully. Please check your inbox.")
-                        .timestamp(LocalDateTime.now(clock))
-                        .build()
-        );
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Logged out successfully")
+                .timestamp(LocalDateTime.now(clock))
+                .build());
     }
 }
