@@ -14,4 +14,6 @@ public interface AuthMapper {
     @Mapping(target = "status", expression = "java(user.getStatus() != null ? user.getStatus().name() : null)")
     @Mapping(target = "role", ignore = true)
     AuthResponse toAuthResponse(User user, String token, String message);
+
+    com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse toRegistrationResponse(User user);
 }

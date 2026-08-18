@@ -63,4 +63,53 @@ public class AuthController {
                 .timestamp(LocalDateTime.now(clock))
                 .build());
     }
+
+    @PostMapping(ApiRoutes.Auth.REGISTER)
+    public ResponseEntity<ApiResponse<com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse>> register(
+            @Valid @RequestBody com.fonepay.devportal.modules.auth.dto.request.RegisterRequest request) {
+        
+        com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse response = authService.register(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.<com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse>builder()
+                        .status(HttpStatus.CREATED.value())
+                        .success(true)
+                        .message("User registered successfully. Please check your email for verification.")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build()
+        );
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping(ApiRoutes.Auth.VERIFY_EMAIL)
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(
+            @org.springframework.web.bind.annotation.RequestParam("token") String token) {
+
+        authService.verifyEmail(token);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Email verified successfully. You can now login.")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build()
+        );
+    }
+
+    @PostMapping(ApiRoutes.Auth.RESEND_VERIFICATION)
+    public ResponseEntity<ApiResponse<Void>> resendVerificationEmail(
+            @org.springframework.web.bind.annotation.RequestParam("email") String email) {
+
+        authService.resendVerificationEmail(email);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Verification email resent successfully.")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build()
+        );
+    }
 }

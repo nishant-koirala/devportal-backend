@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fonepay.devportal.common.constant.enums.TokenType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,19 +17,23 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Document(collection = "verification_tokens")
-public class VerificationToken {
+@Document(collection = "user_tokens")
+public class UserToken {
 
     @Id
     private String id;
 
     @Indexed
-    private String token;
-
-    @Indexed
     private String userId;
 
-    private Instant createdAt;
+    @Indexed(unique = true)
+    private String tokenHash;
 
-    private Instant expiryDate;
+    private TokenType tokenType;
+
+    private Instant expiresAt;
+
+    private Instant usedAt;
+
+    private Instant createdAt;
 }

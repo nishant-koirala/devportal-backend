@@ -11,7 +11,9 @@ public final class ApiRoutes {
         public static final String BASE = API_V1 + "/auth";
         public static final String LOGIN = "/login";
         public static final String LOGOUT = "/logout";
-        
+        public static final String REGISTER = "/register";
+        public static final String VERIFY_EMAIL = "/verify-email";
+        public static final String RESEND_VERIFICATION = "/resend-verification";
     }
 
     public static final class Department {
