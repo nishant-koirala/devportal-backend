@@ -16,7 +16,9 @@ import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
 import com.fonepay.devportal.common.util.HttpRequestUtil;
 import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
+import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 import com.fonepay.devportal.modules.auth.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -108,6 +110,38 @@ public class AuthController {
                         .status(HttpStatus.OK.value())
                         .success(true)
                         .message("Verification email resent successfully.")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build()
+        );
+    }
+
+    @PostMapping(ApiRoutes.Auth.FORGOT_PASSWORD)
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        authService.forgotPassword(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("If an account exists for that email, a password reset link has been sent.")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build()
+        );
+    }
+
+    @PostMapping(ApiRoutes.Auth.RESET_PASSWORD)
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        authService.resetPassword(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Password has been reset successfully. Please log in.")
                         .timestamp(LocalDateTime.now(clock))
                         .build()
         );

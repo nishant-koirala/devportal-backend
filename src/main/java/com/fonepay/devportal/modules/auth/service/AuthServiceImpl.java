@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
+import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.EmailAlreadyVerifiedException;
 import com.fonepay.devportal.common.exception.InvalidOrExpiredTokenException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
@@ -22,8 +23,10 @@ import com.fonepay.devportal.common.exception.UserAlreadyExistsException;
 import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.auth.document.UserToken;
 import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
+import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.repository.UserTokenRepository;
@@ -257,5 +260,92 @@ public class AuthServiceImpl implements AuthService {
                 log.info("User session revoked for sessionId: {}", sessionId);
             });
         }
+    }
+
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (user.getStatus() == UserStatus.DEACTIVATED) {
+                return;
+            }
+
+            Optional<UserToken> existingTokenOpt = tokenRepository
+                    .findByUserIdAndTokenTypeAndUsedAtIsNull(user.getUserId(), TokenType.PASSWORD_RESET);
+
+            if (existingTokenOpt.isPresent()) {
+                UserToken existingToken = existingTokenOpt.get();
+                long secondsSinceCreation = ChronoUnit.SECONDS.between(
+                        existingToken.getCreatedAt(), Instant.now(clock));
+                if (secondsSinceCreation < 60) {
+                    throw new TooManyRequestsException("Please wait 60 seconds before requesting a new token");
+                }
+                tokenRepository.delete(existingToken);
+            }
+
+            String rawToken = createAndSavePasswordResetToken(user);
+            String resetUrl = frontendUrl + "/reset-password?token=" + rawToken;
+            emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+        });
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("New password and confirm password do not match");
+        }
+
+        String hashedToken = hashToken(request.getToken().trim());
+
+        UserToken token = tokenRepository.findByTokenHash(hashedToken)
+                .orElseThrow(() -> new InvalidOrExpiredTokenException("Invalid or expired reset token"));
+
+        if (token.getTokenType() != TokenType.PASSWORD_RESET) {
+            throw new InvalidOrExpiredTokenException("Invalid or expired reset token");
+        }
+        if (token.getUsedAt() != null) {
+            throw new InvalidOrExpiredTokenException("Reset token has already been used");
+        }
+        if (token.getExpiresAt().isBefore(Instant.now(clock))) {
+            throw new InvalidOrExpiredTokenException("Reset token has expired");
+        }
+
+        User user = userRepository.findById(token.getUserId())
+                .orElseThrow(() -> new InvalidOrExpiredTokenException("Invalid or expired reset token"));
+
+        Instant now = Instant.now(clock);
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(now);
+        userRepository.save(user);
+
+        token.setUsedAt(now);
+        tokenRepository.save(token);
+
+        java.util.List<UserSession> activeSessions =
+                userSessionRepository.findByUserIdAndStatus(user.getUserId(), SessionStatus.ACTIVE);
+        activeSessions.forEach(session -> {
+            session.setStatus(SessionStatus.REVOKED);
+            session.setRevokedAt(now);
+        });
+        userSessionRepository.saveAll(activeSessions);
+    }
+
+    private String createAndSavePasswordResetToken(User user) {
+        String rawToken = UUID.randomUUID().toString();
+        Instant now = Instant.now(clock);
+
+        UserToken token = UserToken.builder()
+                .id(IdGenerator.nextUlid())
+                .userId(user.getUserId())
+                .tokenHash(hashToken(rawToken))
+                .tokenType(TokenType.PASSWORD_RESET)
+                .createdAt(now)
+                .expiresAt(now.plus(1, ChronoUnit.HOURS))
+                .build();
+
+        tokenRepository.save(token);
+        return rawToken;
     }
 }

@@ -1,7 +1,9 @@
 package com.fonepay.devportal.modules.auth.service;
 
 import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
+import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 
 public interface AuthService {
 
@@ -14,4 +16,8 @@ public interface AuthService {
     void verifyEmail(String token);
 
     void resendVerificationEmail(String email);
+
+    void forgotPassword(ForgotPasswordRequest request);
+
+    void resetPassword(ResetPasswordRequest request);
 }

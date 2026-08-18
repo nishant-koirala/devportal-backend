@@ -35,4 +35,24 @@ public class EmailService {
             throw new RuntimeException("Failed to send email");
         }
     }
+
+    public void sendPasswordResetEmail(String toEmail, String resetUrl) {
+        log.info("Sending password reset email to: {}", toEmail);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Reset your DevPortal password");
+            message.setText("You requested a password reset.\n\n"
+                    + "Click the link below to set a new password:\n"
+                    + resetUrl
+                    + "\n\nThis link will expire in 1 hour. If you did not request this, you can ignore this email.");
+
+            javaMailSender.send(message);
+            log.info("Password reset email sent successfully to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send email");
+        }
+    }
 }
