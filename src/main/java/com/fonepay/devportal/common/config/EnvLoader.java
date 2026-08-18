@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class EnvLoader {
 
-    static {
+    public static void load() {
         Dotenv dotenv = Dotenv.configure()
                 .ignoreIfMissing()
                 .load();
@@ -16,5 +16,9 @@ public class EnvLoader {
                 System.setProperty(entry.getKey(), entry.getValue());
             }
         });
+    }
+
+    static {
+        load();
     }
 }
