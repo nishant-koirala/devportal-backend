@@ -2,7 +2,6 @@ package com.fonepay.devportal.modules.auth.service;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
+import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl implements AuthService {
+public class AuthServiceImpl implements AuthService{
 
     private final UserRepository userRepository;
     private final UserSessionRepository userSessionRepository;
@@ -71,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        String sessionId = UUID.randomUUID().toString();
+        String sessionId = IdGenerator.nextUlid();
         Instant expiresAt = now.plusMillis(jwtExpirationMs);
 
         UserSession session = UserSession.builder()
