@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 @Order(2)
 public class ServerConnectionChecker implements CommandLineRunner {
 
-    @Value("${server.port:8000}")
+    @Value("${server.port}")
     private String port;
 
     @Override
-    public void run(String @NonNull ... args) {
+    public void run(String @NonNull... args) {
 
         System.out.println("==================================");
         System.out.println(" Spring Project Started");

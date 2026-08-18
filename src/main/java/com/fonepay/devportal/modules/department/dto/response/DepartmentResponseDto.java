@@ -1,4 +1,4 @@
-package com.fonepay.devportal.department.dto.response;
+package com.fonepay.devportal.modules.department.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,8 +1,9 @@
-package com.fonepay.devportal.department.repository;
+package com.fonepay.devportal.modules.department.repository;
 
-import com.fonepay.devportal.department.entity.Department;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
+
+import com.fonepay.devportal.modules.department.entity.Department;
 
 import java.util.List;
 import java.util.Optional;

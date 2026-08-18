@@ -1,4 +1,4 @@
-package com.fonepay.devportal.department.dto.request;
+package com.fonepay.devportal.modules.department.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
