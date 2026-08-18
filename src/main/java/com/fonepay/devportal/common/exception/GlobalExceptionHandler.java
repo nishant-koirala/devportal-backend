@@ -1,5 +1,6 @@
 package com.fonepay.devportal.common.exception;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -11,8 +12,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.fonepay.devportal.common.dto.ApiResponse;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestControllerAdvice
-public class GlobalException {
+public class GlobalExceptionHandler {
+
+    private final Clock clock;
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
@@ -41,7 +47,7 @@ public class GlobalException {
                         .success(false)
                         .message(message)
                         .errors(errors)
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(LocalDateTime.now(clock))
                         .build());
     }
 }
