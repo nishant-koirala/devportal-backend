@@ -35,7 +35,7 @@ public class AuthServiceImpl implements AuthService{
     private final AuthMapper authMapper;
     private final Clock clock;
 
-    @Value("${jwt.expiration-ms:86400000}")
+    @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
 
     @Override
