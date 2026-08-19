@@ -1,0 +1,12 @@
+package com.fonepay.devportal.modules.user.repository;
+
+import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+import com.fonepay.devportal.modules.user.entity.Role;
+
+@Repository
+public interface RoleRepository extends MongoRepository<Role, String> {
+    Optional<Role> findByRoleName(String roleName);
+}
