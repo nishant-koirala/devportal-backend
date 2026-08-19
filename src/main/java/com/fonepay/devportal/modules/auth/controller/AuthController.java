@@ -3,7 +3,6 @@ package com.fonepay.devportal.modules.auth.controller;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
