@@ -12,11 +12,14 @@ import com.fonepay.devportal.modules.user.entity.User;
 @Mapper(componentModel = "spring")
 public interface AuthMapper {
 
+    default AuthResponse toAuthResponse(User user, String tempToken, String message, AuthStatus authStatus) {
+        return toAuthResponse(user, tempToken, null, message, authStatus);
+    }
+
     @Mapping(target = "token", source = "token")
     @Mapping(target = "message", source = "message")
     @Mapping(target = "authStatus", source = "authStatus")
-    @Mapping(target = "role", expression = "java(user.getRole() != null ? user.getRole().name() : null)")
-    AuthResponse toAuthResponse(User user, String token, String message, AuthStatus authStatus);
+    AuthResponse toAuthResponse(User user, String token, java.util.List<String> roles, String message, AuthStatus authStatus);
 
     @Mapping(target = "message", ignore = true)
     RegistrationResponse toRegistrationResponse(User user);

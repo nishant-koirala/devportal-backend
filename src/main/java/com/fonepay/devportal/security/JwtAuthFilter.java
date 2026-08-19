@@ -74,8 +74,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                             User user = userRepository.findById(userId).orElse(null);
                             if (user != null) {
-                                // Build authorities from the user's role
-                                List<SimpleGrantedAuthority> authorities = buildAuthorities(user);
+                                // Build authorities from the JWT token
+                                List<SimpleGrantedAuthority> authorities = buildAuthorities(token);
 
                                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                         user,
@@ -95,10 +95,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private List<SimpleGrantedAuthority> buildAuthorities(User user) {
-        if (user.getRole() == null) {
+    private List<SimpleGrantedAuthority> buildAuthorities(String token) {
+        List<String> roles = jwtUtil.extractRoles(token);
+        if (roles == null || roles.isEmpty()) {
             return Collections.emptyList();
         }
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .collect(java.util.stream.Collectors.toList());
     }
 }

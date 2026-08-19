@@ -51,6 +51,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final UserSessionRepository userSessionRepository;
     private final UserTokenRepository tokenRepository;
+    private final com.fonepay.devportal.modules.user.repository.RoleRepository roleRepository;
+    private final com.fonepay.devportal.modules.user.repository.UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthMapper authMapper;
@@ -84,6 +86,18 @@ public class AuthServiceImpl implements AuthService {
         user.setUpdatedAt(Instant.now(clock));
 
         user = userRepository.save(user);
+
+        // Assign default ADMIN role
+        com.fonepay.devportal.modules.user.entity.Role adminRole = roleRepository.findByRoleName("ADMIN")
+                .orElseThrow(() -> new com.fonepay.devportal.common.exception.ResourceNotFoundException("ADMIN role not found in database"));
+        
+        com.fonepay.devportal.modules.user.entity.UserRole defaultUserRole = com.fonepay.devportal.modules.user.entity.UserRole.builder()
+                .id(IdGenerator.nextUlid())
+                .userId(user.getUserId())
+                .roleId(adminRole.getRoleId())
+                .assignedAt(Instant.now(clock))
+                .build();
+        userRoleRepository.save(defaultUserRole);
 
         String rawToken = createAndSaveVerificationToken(user);
         sendVerificationEmail(user.getEmail(), rawToken);
@@ -244,8 +258,11 @@ public class AuthServiceImpl implements AuthService {
         user.setLastLoginAt(now);
         userRepository.save(user);
 
+        java.util.List<String> roleNames = getUserRoleNames(user.getUserId());
+        boolean requiresOtp = roleNames.contains("ADMIN") || roleNames.contains("EDITOR");
+
         // Check if user requires OTP (ADMIN and EDITOR roles)
-        if (user.requiresOtp()) {
+        if (requiresOtp) {
             // Generate OTP
             String otpCode = otpService.generateOtp(user);
             userRepository.save(user);
@@ -259,8 +276,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // No OTP required (DEVELOPER role)
-        String token = jwtUtil.generateToken(user, sessionId);
-        return authMapper.toAuthResponse(user, token, "Login successful", AuthStatus.LOGIN_SUCCESS);
+        String token = jwtUtil.generateToken(user, sessionId, roleNames);
+        return authMapper.toAuthResponse(user, token, roleNames, "Login successful", AuthStatus.LOGIN_SUCCESS);
     }
 
     @Override
@@ -385,7 +402,10 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
 
-        if (!user.requiresOtp()) {
+        java.util.List<String> roleNames = getUserRoleNames(user.getUserId());
+        boolean requiresOtp = roleNames.contains("ADMIN") || roleNames.contains("EDITOR");
+
+        if (!requiresOtp) {
             throw new UnauthorizedException("OTP not required for this user role");
         }
 
@@ -427,7 +447,10 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
 
-        if (!user.requiresOtp()) {
+        java.util.List<String> roleNames = getUserRoleNames(user.getUserId());
+        boolean requiresOtp = roleNames.contains("ADMIN") || roleNames.contains("EDITOR");
+
+        if (!requiresOtp) {
             throw new UnauthorizedException("OTP verification not required for this user");
         }
 
@@ -454,9 +477,9 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         // Generate full JWT token
-        String token = jwtUtil.generateToken(user, sessionId);
+        String token = jwtUtil.generateToken(user, sessionId, roleNames);
 
-        return authMapper.toAuthResponse(user, token, "Login successful", AuthStatus.LOGIN_SUCCESS);
+        return authMapper.toAuthResponse(user, token, roleNames, "Login successful", AuthStatus.LOGIN_SUCCESS);
     }
 
     @Override
@@ -467,5 +490,12 @@ public class AuthServiceImpl implements AuthService {
             log.error("Failed to extract user ID from token", e);
             return null;
         }
+    }
+
+    private java.util.List<String> getUserRoleNames(String userId) {
+        return userRoleRepository.findByUserId(userId).stream()
+                .map(ur -> roleRepository.findById(ur.getRoleId()).map(com.fonepay.devportal.modules.user.entity.Role::getRoleName).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toList());
     }
 }
