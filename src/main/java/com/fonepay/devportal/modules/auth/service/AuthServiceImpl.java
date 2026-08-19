@@ -23,7 +23,7 @@ import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.exception.UserAlreadyExistsException;
 import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.auth.document.UserToken;
-import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
