@@ -147,4 +147,8 @@ public class OtpService {
         long remaining = java.time.Duration.between(clock.instant(), user.getOtpExpiresAt()).getSeconds();
         return Math.max(0, remaining);
     }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
+    }
 }
