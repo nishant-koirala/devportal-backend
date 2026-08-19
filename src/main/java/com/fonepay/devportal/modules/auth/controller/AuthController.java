@@ -3,6 +3,7 @@ package com.fonepay.devportal.modules.auth.controller;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
+import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.util.HttpRequestUtil;
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
@@ -151,13 +153,8 @@ public class AuthController {
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.<OtpResponse>builder()
-                            .status(HttpStatus.UNAUTHORIZED.value())
-                            .success(false)
-                            .message("Invalid or missing Authorization header")
-                            .timestamp(LocalDateTime.now(clock))
-                            .build());
+            // Let GlobalExceptionHandler return the standard 401 ApiResponse.
+            throw new UnauthorizedException("Invalid or missing Authorization header");
         }
 
         String tempToken = authHeader.substring(7);
@@ -178,13 +175,8 @@ public class AuthController {
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.<AuthResponse>builder()
-                            .status(HttpStatus.UNAUTHORIZED.value())
-                            .success(false)
-                            .message("Invalid or missing Authorization header")
-                            .timestamp(LocalDateTime.now(clock))
-                            .build());
+            // Let GlobalExceptionHandler return the standard 401 ApiResponse.
+            throw new UnauthorizedException("Invalid or missing Authorization header");
         }
 
         String tempToken = authHeader.substring(7);
