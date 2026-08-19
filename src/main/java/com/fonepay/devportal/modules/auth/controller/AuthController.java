@@ -3,6 +3,7 @@ package com.fonepay.devportal.modules.auth.controller;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
 import com.fonepay.devportal.common.util.HttpRequestUtil;
-import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
 import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
 import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
+import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.service.AuthService;
@@ -126,7 +127,7 @@ public class AuthController {
                 ApiResponse.<Void>builder()
                         .status(HttpStatus.OK.value())
                         .success(true)
-                        .message("If an account exists for that email, a password reset link has been sent.")
+                        .message("Check your email for a password reset link. If you don't see it, look in spam or try again in a minute.")
                         .timestamp(LocalDateTime.now(clock))
                         .build());
     }
