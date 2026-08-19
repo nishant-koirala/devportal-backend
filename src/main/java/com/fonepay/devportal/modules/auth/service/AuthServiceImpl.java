@@ -78,6 +78,7 @@ public class AuthServiceImpl implements AuthService {
         user.setFullName(request.getFullName());
         user.setCompanyName(request.getCompanyName());
         user.setStatus(UserStatus.PENDING);
+        user.setRole(Role.EDITOR);
         user.setEmailVerified(false);
         user.setCreatedAt(Instant.now(clock));
         user.setUpdatedAt(Instant.now(clock));
