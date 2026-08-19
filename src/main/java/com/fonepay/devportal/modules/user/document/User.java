@@ -51,7 +51,6 @@ public class User {
     @Field("deactivated_at")
     private Instant deactivatedAt;
 
-
     @Field("otp_code")
     private String otpCode;
 
