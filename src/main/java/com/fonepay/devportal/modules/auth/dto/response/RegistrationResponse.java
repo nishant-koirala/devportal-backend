@@ -8,5 +8,5 @@ import lombok.Data;
 public class RegistrationResponse {
     private String userId;
     private String email;
-    private String message;
+    private String fullName;
 }
