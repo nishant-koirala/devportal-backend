@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -72,10 +74,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                             User user = userRepository.findById(userId).orElse(null);
                             if (user != null) {
+                                // Build authorities from the user's role
+                                List<SimpleGrantedAuthority> authorities = buildAuthorities(user);
+
                                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                         user,
                                         null,
-                                        Collections.emptyList());
+                                        authorities);
                                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                                 SecurityContextHolder.getContext().setAuthentication(authToken);
                             }
@@ -88,5 +93,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private List<SimpleGrantedAuthority> buildAuthorities(User user) {
+        if (user.getRole() == null) {
+            return Collections.emptyList();
+        }
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
     }
 }

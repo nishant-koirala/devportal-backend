@@ -16,6 +16,16 @@ public final class ApiRoutes {
         public static final String RESEND_VERIFICATION = "/resend-verification";
         public static final String FORGOT_PASSWORD = "/forgot-password";
         public static final String RESET_PASSWORD = "/reset-password";
+        public static final String OTP_REQUEST = "/otp/request";
+        public static final String OTP_VERIFY = "/otp/verify";
+    }
+
+    public static final class Admin {
+        public static final String BASE = API_V1 + "/admin";
+    }
+
+    public static final class Cms {
+        public static final String BASE = API_V1 + "/cms";
     }
 
     public static final class Department {

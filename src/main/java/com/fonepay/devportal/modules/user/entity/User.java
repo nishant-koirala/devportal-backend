@@ -5,6 +5,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import com.fonepay.devportal.common.constant.enums.OtpStatus;
+import com.fonepay.devportal.common.constant.enums.Role;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 
 import lombok.Data;
@@ -12,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -50,9 +53,35 @@ public class User {
     @Field("deactivated_at")
     private Instant deactivatedAt;
 
+    @Field("role")
+    private Role role;
+
+    @Field("otp_code")
+    private String otpCode;
+
+    @Field("otp_expires_at")
+    private Instant otpExpiresAt;
+
+    @Field("otp_attempts")
+    private int otpAttempts;
+
+    @Field("otp_status")
+    private OtpStatus otpStatus;
+
+    @Field("otp_verified_at")
+    private Instant otpVerifiedAt;
+
     @Field("created_at")
     private Instant createdAt;
 
     @Field("updated_at")
     private Instant updatedAt;
+
+    /**
+     * Check if this user requires OTP authentication.
+     * ADMIN and EDITOR roles require OTP.
+     */
+    public boolean requiresOtp() {
+        return role == Role.ADMIN || role == Role.EDITOR;
+    }
 }

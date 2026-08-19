@@ -41,10 +41,18 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/verify-email",
+                                "/api/v1/auth/resend-verification",
                                 "/api/v1/auth/forgot-password",
-                                "/api/v1/auth/reset-password")
+                                "/api/v1/auth/reset-password",
+                                "/api/v1/auth/otp/**")
                         .permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
+                        // Admin-only endpoints
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // CMS endpoints for Admin and Editor
+                        .requestMatchers("/api/v1/cms/**").hasAnyRole("ADMIN", "EDITOR")
+                        // Departments - any authenticated user
+                        .requestMatchers("/api/v1/departments/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
