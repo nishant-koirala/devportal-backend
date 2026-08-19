@@ -14,6 +14,8 @@ import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.EmailAlreadyVerifiedException;
+import com.fonepay.devportal.common.exception.ForbiddenException;
+import com.fonepay.devportal.common.exception.InvalidOtpException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.exception.UserAlreadyExistsException;
@@ -45,6 +47,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private static final String DEFAULT_ROLE = "ADMIN";
+    private static final long EMAIL_VERIFICATION_TOKEN_HOURS = 24;
+    private static final long PASSWORD_RESET_TOKEN_HOURS = 1;
+    private static final long RESEND_COOLDOWN_SECONDS = 60;
+    private static final int MAX_OTP_ATTEMPTS = 3;
+
     private final UserRepository userRepository;
     private final UserRoleService userRoleService;
     private final UserSessionService userSessionService;
@@ -64,19 +72,10 @@ public class AuthServiceImpl implements AuthService {
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
-    @Value("${app.auth.default-role:ADMIN}")
-    private String defaultRole;
-
-    @Value("${app.auth.verification-token-hours:24}")
-    private long emailVerificationTokenHours;
-
-    @Value("${app.auth.password-reset-token-hours:1}")
-    private long passwordResetTokenHours;
-
-    @Value("${app.auth.resend-cooldown-seconds:60}")
-    private long resendCooldownSeconds;
-
+    // ==========================================
     // UserRegistrationService Implementation
+    // ==========================================
+
     @Override
     public RegistrationResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -98,11 +97,11 @@ public class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
 
         // Assign default role
-        userRoleService.assignDefaultRole(user.getUserId(), defaultRole);
+        userRoleService.assignDefaultRole(user.getUserId(), DEFAULT_ROLE);
 
         // Create and send verification token
         String rawToken = userTokenService.createAndSaveToken(
-                user.getUserId(), TokenType.EMAIL_VERIFICATION, emailVerificationTokenHours);
+                user.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
         sendVerificationEmail(user.getEmail(), rawToken);
 
         return authMapper.toRegistrationResponse(user);
@@ -134,14 +133,17 @@ public class AuthServiceImpl implements AuthService {
             throw new EmailAlreadyVerifiedException("Email is already verified");
         }
 
-        userTokenService.checkRateLimit(user.getUserId(), TokenType.EMAIL_VERIFICATION, resendCooldownSeconds);
+        userTokenService.checkRateLimit(user.getUserId(), TokenType.EMAIL_VERIFICATION, RESEND_COOLDOWN_SECONDS);
 
         String rawToken = userTokenService.createAndSaveToken(
-                user.getUserId(), TokenType.EMAIL_VERIFICATION, emailVerificationTokenHours);
+                user.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
         sendVerificationEmail(user.getEmail(), rawToken);
     }
 
+    // ==========================================
     // AuthenticationService Implementation
+    // ==========================================
+
     @Override
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         log.info("Processing login request for email: {}", request.getEmail());
@@ -206,7 +208,10 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    // ==========================================
     // PasswordService Implementation
+    // ==========================================
+
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
         String email = request.getEmail().trim().toLowerCase();
@@ -216,10 +221,10 @@ public class AuthServiceImpl implements AuthService {
                 return;
             }
 
-            userTokenService.checkRateLimit(user.getUserId(), TokenType.PASSWORD_RESET, resendCooldownSeconds);
+            userTokenService.checkRateLimit(user.getUserId(), TokenType.PASSWORD_RESET, RESEND_COOLDOWN_SECONDS);
 
             String rawToken = userTokenService.createAndSaveToken(
-                    user.getUserId(), TokenType.PASSWORD_RESET, passwordResetTokenHours);
+                    user.getUserId(), TokenType.PASSWORD_RESET, PASSWORD_RESET_TOKEN_HOURS);
             String resetUrl = frontendUrl + "/reset-password?token=" + rawToken;
             emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
         });
@@ -245,14 +250,18 @@ public class AuthServiceImpl implements AuthService {
         userSessionService.revokeAllActiveSessions(user.getUserId());
     }
 
+    // ==========================================
     // MfaAuthService Implementation
+    // ==========================================
+
     @Override
     public OtpResponse requestOtp(String tempToken) {
         User user = validateTempTokenAndGetUser(tempToken);
 
         List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
         if (!mfaPolicy.isMfaRequired(user, roleNames)) {
-            throw new UnauthorizedException("OTP not required for this user role");
+            // Authenticated but OTP not allowed for this role → 403, not 401.
+            throw new ForbiddenException("OTP not required for this user role");
         }
 
         if (otpService.hasPendingOtp(user)) {
@@ -291,19 +300,21 @@ public class AuthServiceImpl implements AuthService {
 
         List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
         if (!mfaPolicy.isMfaRequired(user, roleNames)) {
-            throw new UnauthorizedException("OTP verification not required for this user");
+            // Authenticated but OTP not allowed for this role → 403, not 401.
+            throw new ForbiddenException("OTP verification not required for this user");
         }
 
         if (!otpService.verifyOtp(user, request.getCode())) {
             userRepository.save(user);
 
+            // Wrong/expired OTP is 400 so the UI can retry instead of sending the user to login.
             if (user.getOtpStatus() == OtpStatus.EXPIRED) {
-                throw new UnauthorizedException("OTP has expired. Please request a new one.");
+                throw new InvalidOtpException("OTP has expired. Please request a new one.");
             } else if (user.getOtpStatus() == OtpStatus.FAILED) {
-                throw new UnauthorizedException("Max OTP attempts exceeded. Please request a new OTP.");
+                throw new InvalidOtpException("Max OTP attempts exceeded. Please request a new OTP.");
             } else {
-                int remainingAttempts = otpService.getMaxAttempts() - user.getOtpAttempts();
-                throw new UnauthorizedException("Invalid OTP code. " + remainingAttempts + " attempts remaining.");
+                int remainingAttempts = MAX_OTP_ATTEMPTS - user.getOtpAttempts();
+                throw new InvalidOtpException("Invalid OTP code. " + remainingAttempts + " attempts remaining.");
             }
         }
 
@@ -316,7 +327,10 @@ public class AuthServiceImpl implements AuthService {
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 
+    // ==========================================
     // Private Helpers
+    // ==========================================
+
     private User validateTempTokenAndGetUser(String tempToken) {
         if (!tempTokenService.validateTempToken(tempToken)) {
             throw new UnauthorizedException("Invalid or expired temporary token");

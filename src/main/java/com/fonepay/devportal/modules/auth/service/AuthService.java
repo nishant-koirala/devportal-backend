@@ -1,11 +1,11 @@
 package com.fonepay.devportal.modules.auth.service;
 
 /**
- * Composite authentication facade interface combining segregated auth domain services.
+ * Composite authentication facade combining login, registration, password reset, and MFA.
  */
-public interface AuthService extends 
-        AuthenticationService, 
-        UserRegistrationService, 
-        PasswordService, 
+public interface AuthService extends
+        AuthenticationService,
+        UserRegistrationService,
+        PasswordService,
         MfaAuthService {
 }
