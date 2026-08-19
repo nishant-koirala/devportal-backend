@@ -1,9 +1,12 @@
 package com.fonepay.devportal.modules.auth.dto.response;
 
-import lombok.Builder;
-import lombok.Data;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fonepay.devportal.common.constant.enums.AuthStatus;
+
+import lombok.Builder;
+import lombok.Data;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
@@ -13,8 +16,7 @@ public class AuthResponse {
     private String userId;
     private String fullName;
     private String email;
-    private java.util.List<String> roles;
-    private String message;
+    private List<String> roles;
     private String token;
     private AuthStatus authStatus;
 }

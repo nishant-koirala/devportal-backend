@@ -175,11 +175,11 @@ public class AuthServiceImpl implements AuthService {
             emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
 
             String tempToken = tempTokenService.generateTempToken(user.getUserId(), session.getSessionId());
-            return authMapper.toAuthResponse(user, tempToken, "OTP sent to your email", AuthStatus.OTP_REQUIRED);
+            return authMapper.toAuthResponse(user, tempToken, AuthStatus.OTP_REQUIRED);
         }
 
         String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
-        return authMapper.toAuthResponse(user, token, roleNames, "Login successful", AuthStatus.LOGIN_SUCCESS);
+        return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 
     @Override
@@ -319,7 +319,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("OTP verification successful for user: {}", userId);
 
         String token = jwtUtil.generateToken(user, sessionId, roleNames);
-        return authMapper.toAuthResponse(user, token, roleNames, "Login successful", AuthStatus.LOGIN_SUCCESS);
+        return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 
     // ==========================================
