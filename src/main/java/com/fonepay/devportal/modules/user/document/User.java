@@ -1,10 +1,11 @@
-package com.fonepay.devportal.modules.user.entity;
+package com.fonepay.devportal.modules.user.document;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import com.fonepay.devportal.common.constant.enums.OtpStatus;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 
 import lombok.Data;
@@ -50,9 +51,26 @@ public class User {
     @Field("deactivated_at")
     private Instant deactivatedAt;
 
+
+    @Field("otp_code")
+    private String otpCode;
+
+    @Field("otp_expires_at")
+    private Instant otpExpiresAt;
+
+    @Field("otp_attempts")
+    private int otpAttempts;
+
+    @Field("otp_status")
+    private OtpStatus otpStatus;
+
+    @Field("otp_verified_at")
+    private Instant otpVerifiedAt;
+
     @Field("created_at")
     private Instant createdAt;
 
     @Field("updated_at")
     private Instant updatedAt;
+
 }

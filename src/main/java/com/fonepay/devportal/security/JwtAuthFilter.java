@@ -4,18 +4,20 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
-import com.fonepay.devportal.modules.user.entity.User;
-import com.fonepay.devportal.modules.user.entity.UserSession;
+import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserSession;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.repository.UserSessionRepository;
 
@@ -72,10 +74,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                             User user = userRepository.findById(userId).orElse(null);
                             if (user != null) {
+                                // Build authorities from the JWT token
+                                List<SimpleGrantedAuthority> authorities = buildAuthorities(token);
+
                                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                         user,
                                         null,
-                                        Collections.emptyList());
+                                        authorities);
                                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                                 SecurityContextHolder.getContext().setAuthentication(authToken);
                             }
@@ -88,5 +93,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private List<SimpleGrantedAuthority> buildAuthorities(String token) {
+        List<String> roles = jwtUtil.extractRoles(token);
+        if (roles == null || roles.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .collect(java.util.stream.Collectors.toList());
     }
 }

@@ -2,6 +2,7 @@ package com.fonepay.devportal.modules.department.service;
 
 import com.fonepay.devportal.common.exception.DuplicateResourceException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
+import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.department.dto.request.DepartmentRequestDto;
 import com.fonepay.devportal.modules.department.dto.response.DepartmentResponseDto;
 import com.fonepay.devportal.modules.department.entity.Department;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -33,7 +33,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         }
 
         Department department = Department.builder()
-                .departmentId(UUID.randomUUID().toString())
+                .departmentId(IdGenerator.nextUlid())
                 .departmentName(requestDto.getDepartmentName().trim())
                 .departmentDescription(requestDto.getDepartmentDescription())
                 .isActive(requestDto.getIsActive() != null ? requestDto.getIsActive() : true)
