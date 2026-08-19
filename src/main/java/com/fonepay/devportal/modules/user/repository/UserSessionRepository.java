@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
-import com.fonepay.devportal.modules.user.entity.UserSession;
+import com.fonepay.devportal.modules.user.document.UserSession;
 
 @Repository
 public interface UserSessionRepository extends MongoRepository<UserSession, String> {

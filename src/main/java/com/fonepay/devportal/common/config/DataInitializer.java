@@ -1,7 +1,7 @@
 package com.fonepay.devportal.common.config;
 
 import com.fonepay.devportal.common.util.IdGenerator;
-import com.fonepay.devportal.modules.user.entity.Role;
+import com.fonepay.devportal.modules.user.document.Role;
 import com.fonepay.devportal.modules.user.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

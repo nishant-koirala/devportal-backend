@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.auth.dto.reponse;
+package com.fonepay.devportal.modules.auth.dto.response;
 
 import lombok.Builder;
 import lombok.Data;

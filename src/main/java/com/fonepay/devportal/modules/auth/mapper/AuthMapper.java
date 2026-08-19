@@ -4,10 +4,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.fonepay.devportal.common.constant.enums.AuthStatus;
-import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
-import com.fonepay.devportal.modules.user.entity.User;
+import com.fonepay.devportal.modules.user.document.User;
 
 @Mapper(componentModel = "spring")
 public interface AuthMapper {

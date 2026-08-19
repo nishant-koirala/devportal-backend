@@ -3,8 +3,11 @@ package com.fonepay.devportal.modules.auth.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,20 +26,24 @@ import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.exception.UserAlreadyExistsException;
 import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.auth.document.UserToken;
-import com.fonepay.devportal.modules.auth.dto.reponse.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
 import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
 import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
+import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.repository.UserTokenRepository;
 import com.fonepay.devportal.modules.notification.service.EmailService;
-import com.fonepay.devportal.modules.user.entity.User;
-import com.fonepay.devportal.modules.user.entity.UserSession;
+import com.fonepay.devportal.modules.user.document.Role;
+import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserRole;
+import com.fonepay.devportal.modules.user.document.UserSession;
+import com.fonepay.devportal.modules.user.repository.RoleRepository;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
+import com.fonepay.devportal.modules.user.repository.UserRoleRepository;
 import com.fonepay.devportal.modules.user.repository.UserSessionRepository;
 import com.fonepay.devportal.security.JwtUtil;
 
@@ -51,8 +58,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final UserSessionRepository userSessionRepository;
     private final UserTokenRepository tokenRepository;
-    private final com.fonepay.devportal.modules.user.repository.RoleRepository roleRepository;
-    private final com.fonepay.devportal.modules.user.repository.UserRoleRepository userRoleRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthMapper authMapper;
@@ -87,10 +94,10 @@ public class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
 
         // Assign default ADMIN role
-        com.fonepay.devportal.modules.user.entity.Role adminRole = roleRepository.findByRoleName("ADMIN")
-                .orElseThrow(() -> new com.fonepay.devportal.common.exception.ResourceNotFoundException("ADMIN role not found in database"));
+        Role adminRole = roleRepository.findByRoleName("ADMIN")
+                .orElseThrow(() -> new ResourceNotFoundException("ADMIN role not found in database"));
         
-        com.fonepay.devportal.modules.user.entity.UserRole defaultUserRole = com.fonepay.devportal.modules.user.entity.UserRole.builder()
+        UserRole defaultUserRole = UserRole.builder()
                 .id(IdGenerator.nextUlid())
                 .userId(user.getUserId())
                 .roleId(adminRole.getRoleId())
@@ -491,10 +498,10 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private java.util.List<String> getUserRoleNames(String userId) {
+    private List<String> getUserRoleNames(String userId) {
         return userRoleRepository.findByUserId(userId).stream()
-                .map(ur -> roleRepository.findById(ur.getRoleId()).map(com.fonepay.devportal.modules.user.entity.Role::getRoleName).orElse(null))
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toList());
+                .map(ur -> roleRepository.findById(ur.getRoleId()).map(Role::getRoleName).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }
