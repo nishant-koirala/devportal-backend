@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.user.entity;
+package com.fonepay.devportal.modules.user.document;
 
 import java.time.Instant;
 import org.springframework.data.annotation.Id;

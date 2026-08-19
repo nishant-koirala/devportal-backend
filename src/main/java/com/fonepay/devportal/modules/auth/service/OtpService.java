@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.common.constant.enums.OtpStatus;
-import com.fonepay.devportal.modules.user.entity.User;
+import com.fonepay.devportal.modules.user.document.User;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -146,5 +146,9 @@ public class OtpService {
         }
         long remaining = java.time.Duration.between(clock.instant(), user.getOtpExpiresAt()).getSeconds();
         return Math.max(0, remaining);
+    }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
     }
 }

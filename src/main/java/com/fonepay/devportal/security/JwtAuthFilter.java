@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
-import com.fonepay.devportal.modules.user.entity.User;
-import com.fonepay.devportal.modules.user.entity.UserSession;
+import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserSession;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.repository.UserSessionRepository;
 

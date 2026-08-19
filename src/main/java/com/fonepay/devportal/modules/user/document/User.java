@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.user.entity;
+package com.fonepay.devportal.modules.user.document;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.Instant;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -51,7 +50,6 @@ public class User {
 
     @Field("deactivated_at")
     private Instant deactivatedAt;
-
 
     @Field("otp_code")
     private String otpCode;
