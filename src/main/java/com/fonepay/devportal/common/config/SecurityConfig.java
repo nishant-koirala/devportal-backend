@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.fonepay.devportal.security.JwtAccessDeniedHandler;
 import com.fonepay.devportal.security.JwtAuthEntryPoint;
 import com.fonepay.devportal.security.JwtAuthFilter;
 
@@ -23,6 +24,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -34,7 +36,10 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthEntryPoint))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthEntryPoint)
+                        // Role mismatch on /admin/** and /cms/** returns ApiResponse 403, not Spring HTML.
+                        .accessDeniedHandler(jwtAccessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(

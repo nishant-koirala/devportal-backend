@@ -5,6 +5,8 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import com.fonepay.devportal.common.exception.EmailSendException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,7 +37,8 @@ public class EmailService {
             log.info("Verification email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send verification email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send email");
+            // Avoid raw RuntimeException so the client gets a generic 503, not SMTP details.
+            throw new EmailSendException("Failed to send email", e);
         }
     }
 
@@ -55,7 +58,7 @@ public class EmailService {
             log.info("Password reset email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send email");
+            throw new EmailSendException("Failed to send email", e);
         }
     }
 
@@ -70,7 +73,7 @@ public class EmailService {
             log.info("OTP email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send OTP email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send OTP email", e);
+            throw new EmailSendException("Failed to send OTP email", e);
         }
     }
 
