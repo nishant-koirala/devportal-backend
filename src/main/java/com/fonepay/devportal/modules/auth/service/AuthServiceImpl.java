@@ -9,7 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.common.constant.enums.AuthStatus;
-import com.fonepay.devportal.common.constant.enums.OtpStatus;
+import com.fonepay.devportal.common.constant.enums.PendingAuthStatus;
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.BadRequestException;
@@ -20,7 +20,9 @@ import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.exception.UserAlreadyExistsException;
 import com.fonepay.devportal.common.util.IdGenerator;
+import com.fonepay.devportal.modules.auth.document.PendingAuth;
 import com.fonepay.devportal.modules.auth.document.UserToken;
+import com.fonepay.devportal.modules.auth.repository.PendingAuthRepository;
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
@@ -31,6 +33,7 @@ import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.policy.MfaPolicy;
+import com.fonepay.devportal.modules.auth.service.PendingAuthService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.document.UserSession;
@@ -59,7 +62,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserTokenService userTokenService;
     private final MfaPolicy mfaPolicy;
     private final OtpService otpService;
-    private final TempTokenService tempTokenService;
+    private final PendingAuthService pendingAuthService;
+    private final PendingAuthRepository pendingAuthRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -162,8 +166,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Instant now = clock.instant();
-        UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, jwtExpirationMs);
-
         user.setLastLoginAt(now);
         userRepository.save(user);
 
@@ -171,15 +173,25 @@ public class AuthServiceImpl implements AuthService {
         boolean requiresMfa = mfaPolicy.isMfaRequired(user, roleNames);
 
         if (requiresMfa) {
-            String otpCode = otpService.generateOtp(user);
-            userRepository.save(user);
+            // Generate OTP code (plain text for email)
+            String otpCode = otpService.generateOtpCode();
+            // Hash OTP for secure storage in pending auth
+            String otpHash = otpService.hashOtp(otpCode);
 
+            // Create pending auth record with OTP hash (NO session created yet)
+            // OTP expiration is 5 minutes (300 seconds) - use otpExpirationMinutes from OtpService
+            int otpExpirationMinutes = 5; // Default, matches OtpService default
+            PendingAuth pendingAuth = pendingAuthService.createPendingAuth(user.getUserId(), otpHash, otpExpirationMinutes);
+
+            // Send OTP via email
             emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
 
-            String tempToken = tempTokenService.generateTempToken(user.getUserId(), session.getSessionId());
-            return authMapper.toAuthResponse(user, tempToken, AuthStatus.OTP_REQUIRED);
+            // Return pending auth ID as reference (not session ID or JWT)
+            return authMapper.toAuthResponse(user, pendingAuth.getId(), AuthStatus.OTP_REQUIRED);
         }
 
+        // No MFA required - create session and issue JWT immediately
+        UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, jwtExpirationMs);
         String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
@@ -255,95 +267,98 @@ public class AuthServiceImpl implements AuthService {
     // ==========================================
 
     @Override
-    public OtpResponse requestOtp(String tempToken) {
-        User user = validateTempTokenAndGetUser(tempToken);
+    public OtpResponse requestOtp(String pendingAuthId) {
+        PendingAuth pendingAuth = pendingAuthService.findById(pendingAuthId)
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired pending authentication"));
 
-        List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
-        if (!mfaPolicy.isMfaRequired(user, roleNames)) {
-            // Authenticated but OTP not allowed for this role → 403, not 401.
-            throw new ForbiddenException("OTP not required for this user role");
+        // Check if pending auth belongs to user and is still pending
+        if (pendingAuth.getStatus() != PendingAuthStatus.PENDING) {
+            throw new UnauthorizedException("Invalid or expired pending authentication");
         }
 
-        if (otpService.hasPendingOtp(user)) {
-            long remainingSeconds = otpService.getOtpRemainingSeconds(user);
-            return authMapper.toOtpResponse(
-                    "OTP already sent. Please check your email or wait for it to expire.",
-                    (int) remainingSeconds);
-        }
-
-        String otpCode = otpService.generateOtp(user);
-        userRepository.save(user);
-
-        emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
-        log.info("OTP resent for user: {}", user.getUserId());
-
-        return authMapper.toOtpResponse(
-                "OTP sent to your email",
-                (int) otpService.getOtpRemainingSeconds(user));
-    }
-
-    @Override
-    public AuthResponse verifyOtp(String tempToken, OtpVerifyRequest request) {
-        if (!tempTokenService.validateTempToken(tempToken)) {
-            throw new UnauthorizedException("Invalid or expired temporary token");
-        }
-
-        String userId = tempTokenService.extractUserId(tempToken);
-        String sessionId = tempTokenService.extractSessionId(tempToken);
-
-        if (userId == null || sessionId == null) {
-            throw new UnauthorizedException("Invalid temporary token");
-        }
-
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(pendingAuth.getUserId())
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
 
         List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
         if (!mfaPolicy.isMfaRequired(user, roleNames)) {
-            // Authenticated but OTP not allowed for this role → 403, not 401.
+            throw new ForbiddenException("OTP not required for this user role");
+        }
+
+        // Check if expired
+        Instant now = Instant.now(clock);
+        if (pendingAuth.getExpiresAt() != null && pendingAuth.getExpiresAt().isBefore(now)) {
+            pendingAuth.setStatus(PendingAuthStatus.EXPIRED);
+            pendingAuthService.deletePendingAuth(pendingAuth);
+            throw new InvalidOtpException("OTP has expired. Please request a new one by logging in again.");
+        }
+
+        // Generate new OTP
+        String otpCode = otpService.generateOtpCode();
+        String otpHash = otpService.hashOtp(otpCode);
+
+        // Update pending auth with new OTP hash and reset attempts
+        pendingAuth.setOtpHash(otpHash);
+        pendingAuth.setAttempts(0);
+        pendingAuth.setExpiresAt(now.plusSeconds(5 * 60L)); // 5 minutes
+        pendingAuth.setStatus(PendingAuthStatus.PENDING);
+        pendingAuth.setVerifiedAt(null);
+        pendingAuthRepository.save(pendingAuth); // Save the updated pending auth
+
+        emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
+        log.info("OTP resent for pending auth: {}", pendingAuthId);
+
+        return authMapper.toOtpResponse(
+                "OTP sent to your email",
+                (int) java.time.Duration.between(now, pendingAuth.getExpiresAt()).getSeconds());
+    }
+
+    @Override
+    public AuthResponse verifyOtp(String pendingAuthId, OtpVerifyRequest request) {
+        PendingAuth pendingAuth = pendingAuthService.findById(pendingAuthId)
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired pending authentication"));
+
+        if (pendingAuth.getStatus() != PendingAuthStatus.PENDING) {
+            throw new UnauthorizedException("Invalid or expired pending authentication");
+        }
+
+        User user = userRepository.findById(pendingAuth.getUserId())
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+
+        List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
+        if (!mfaPolicy.isMfaRequired(user, roleNames)) {
             throw new ForbiddenException("OTP verification not required for this user");
         }
 
-        if (!otpService.verifyOtp(user, request.getCode())) {
-            userRepository.save(user);
+        // Verify OTP using pending auth service
+        boolean verified = pendingAuthService.verifyOtp(pendingAuth, request.getCode(), MAX_OTP_ATTEMPTS);
 
-            // Wrong/expired OTP is 400 so the UI can retry instead of sending the user to login.
-            if (user.getOtpStatus() == OtpStatus.EXPIRED) {
-                throw new InvalidOtpException("OTP has expired. Please request a new one.");
-            } else if (user.getOtpStatus() == OtpStatus.FAILED) {
-                throw new InvalidOtpException("Max OTP attempts exceeded. Please request a new OTP.");
+        if (!verified) {
+            // Check the status to provide appropriate error message
+            if (pendingAuth.getStatus() == PendingAuthStatus.EXPIRED) {
+                pendingAuthService.deletePendingAuth(pendingAuth);
+                throw new InvalidOtpException("OTP has expired. Please request a new one by logging in again.");
+            } else if (pendingAuth.getStatus() == PendingAuthStatus.FAILED) {
+                pendingAuthService.deletePendingAuth(pendingAuth);
+                throw new InvalidOtpException("Max OTP attempts exceeded. Please request a new OTP by logging in again.");
             } else {
-                int remainingAttempts = MAX_OTP_ATTEMPTS - user.getOtpAttempts();
+                int remainingAttempts = MAX_OTP_ATTEMPTS - pendingAuth.getAttempts();
                 throw new InvalidOtpException("Invalid OTP code. " + remainingAttempts + " attempts remaining.");
             }
         }
 
-        // OTP verified successfully
-        otpService.clearOtp(user);
-        userRepository.save(user);
-        log.info("OTP verification successful for user: {}", userId);
+        // OTP verified successfully - create ACTIVE session now
+        pendingAuthService.deletePendingAuth(pendingAuth);
+        log.info("OTP verification successful for user: {}", user.getUserId());
 
-        String token = jwtUtil.generateToken(user, sessionId, roleNames);
+        // Create session and issue JWT
+        UserSession session = userSessionService.createSession(user.getUserId(), "unknown", "unknown", jwtExpirationMs);
+        String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 
     // ==========================================
     // Private Helpers
     // ==========================================
-
-    private User validateTempTokenAndGetUser(String tempToken) {
-        if (!tempTokenService.validateTempToken(tempToken)) {
-            throw new UnauthorizedException("Invalid or expired temporary token");
-        }
-
-        String userId = tempTokenService.extractUserId(tempToken);
-        if (userId == null) {
-            throw new UnauthorizedException("Invalid temporary token");
-        }
-
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("User not found"));
-    }
 
     private void sendVerificationEmail(String email, String rawToken) {
         String verificationUrl = frontendUrl + "/verify-email?token=" + rawToken;
