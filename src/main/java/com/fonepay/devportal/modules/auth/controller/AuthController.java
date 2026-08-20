@@ -29,6 +29,7 @@ import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.service.AuthService;
 import com.fonepay.devportal.modules.auth.service.LoginService;
+import com.fonepay.devportal.modules.auth.service.RegistrationService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -41,6 +42,7 @@ public class AuthController {
 
     private final LoginService loginService;
     private final AuthService authService;
+    private final RegistrationService registrationService;
     private final Clock clock;
 
     @PostMapping(ApiRoutes.Auth.LOGIN)
@@ -80,7 +82,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<RegistrationResponse>> register(
             @Valid @RequestBody RegisterRequest request) {
 
-        RegistrationResponse response = authService.register(request);
+        RegistrationResponse response = registrationService.register(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.<RegistrationResponse>builder()
@@ -95,7 +97,7 @@ public class AuthController {
     @GetMapping(ApiRoutes.Auth.VERIFY_EMAIL)
     public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam("token") String token) {
 
-        authService.verifyEmail(token);
+        registrationService.verifyEmail(token);
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
@@ -109,7 +111,7 @@ public class AuthController {
     @PostMapping(ApiRoutes.Auth.RESEND_VERIFICATION)
     public ResponseEntity<ApiResponse<Void>> resendVerificationEmail(@RequestParam("email") String email) {
 
-        authService.resendVerificationEmail(email);
+        registrationService.resendVerificationEmail(email);
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()

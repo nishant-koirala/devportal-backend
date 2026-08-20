@@ -4,11 +4,9 @@ import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
-import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
 import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
-import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.service.AuthService;
 
 import lombok.RequiredArgsConstructor;
@@ -17,24 +15,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final RegistrationServiceImpl registrationService;
     private final PasswordServiceImpl passwordService;
     private final MfaServiceImpl mfaService;
-
-    @Override
-    public RegistrationResponse register(RegisterRequest request) {
-        return registrationService.register(request);
-    }
-
-    @Override
-    public void verifyEmail(String token) {
-        registrationService.verifyEmail(token);
-    }
-
-    @Override
-    public void resendVerificationEmail(String email) {
-        registrationService.resendVerificationEmail(email);
-    }
 
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {

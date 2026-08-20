@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.fonepay.devportal.modules.auth.service.RegistrationService;
+
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.EmailAlreadyVerifiedException;
@@ -27,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class RegistrationServiceImpl {
+public class RegistrationServiceImpl implements RegistrationService {
 
     private static final String DEFAULT_ROLE = "ADMIN";
     private static final long EMAIL_VERIFICATION_TOKEN_HOURS = 24;
@@ -44,6 +46,7 @@ public class RegistrationServiceImpl {
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
+    @Override
     public RegistrationResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
 
@@ -73,6 +76,7 @@ public class RegistrationServiceImpl {
         return authMapper.toRegistrationResponse(user);
     }
 
+    @Override
     public void verifyEmail(String rawToken) {
         UserToken token = userTokenService.validateAndConsumeToken(rawToken, TokenType.EMAIL_VERIFICATION);
 
@@ -89,6 +93,7 @@ public class RegistrationServiceImpl {
         userRepository.save(user);
     }
 
+    @Override
     public void resendVerificationEmail(String rawEmail) {
         String email = rawEmail.trim().toLowerCase();
         User user = userRepository.findByEmail(email)
