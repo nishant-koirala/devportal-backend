@@ -27,4 +27,13 @@ public interface AuthMapper {
     @Mapping(target = "message", source = "message")
     @Mapping(target = "expiresInSeconds", source = "expiresInSeconds")
     OtpResponse toOtpResponse(String message, int expiresInSeconds);
+
+    default List<String> mapRoles(List<com.fonepay.devportal.modules.user.document.AssignedRole> assignedRoles) {
+        if (assignedRoles == null) {
+            return null;
+        }
+        return assignedRoles.stream()
+                .map(com.fonepay.devportal.modules.user.document.AssignedRole::getRoleName)
+                .collect(java.util.stream.Collectors.toList());
+    }
 }
