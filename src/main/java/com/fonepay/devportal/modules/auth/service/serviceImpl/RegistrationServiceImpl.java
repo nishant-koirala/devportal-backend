@@ -45,14 +45,16 @@ public class RegistrationServiceImpl {
     private String frontendUrl;
 
     public RegistrationResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException("User already exists with email: " + request.getEmail());
+        String email = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new UserAlreadyExistsException("User already exists with email: " + email);
         }
 
         Instant now = Instant.now(clock);
         User user = new User();
         user.setUserId(IdGenerator.nextUlid());
-        user.setEmail(request.getEmail());
+        user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName());
         user.setCompanyName(request.getCompanyName());
@@ -87,7 +89,8 @@ public class RegistrationServiceImpl {
         userRepository.save(user);
     }
 
-    public void resendVerificationEmail(String email) {
+    public void resendVerificationEmail(String rawEmail) {
+        String email = rawEmail.trim().toLowerCase();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
