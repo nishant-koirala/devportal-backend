@@ -28,6 +28,7 @@ import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.service.AuthService;
+import com.fonepay.devportal.modules.auth.service.LoginService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private final LoginService loginService;
     private final AuthService authService;
     private final Clock clock;
 
@@ -49,7 +51,7 @@ public class AuthController {
         String ipAddress = HttpRequestUtil.getClientIp(httpRequest);
         String userAgent = HttpRequestUtil.getUserAgent(httpRequest);
 
-        AuthResponse authResponse = authService.login(request, ipAddress, userAgent);
+        AuthResponse authResponse = loginService.login(request, ipAddress, userAgent);
 
         return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
                 .status(HttpStatus.OK.value())
@@ -64,7 +66,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
 
-        authService.logout(authHeader);
+        loginService.logout(authHeader);
 
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .status(HttpStatus.OK.value())
