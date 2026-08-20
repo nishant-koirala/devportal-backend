@@ -82,7 +82,7 @@ public class UserTokenServiceImpl implements UserTokenService {
         }
 
         if (token.getUsedAt() != null) {
-            throw new InvalidOrExpiredTokenException("Token has already been used");
+            throw new InvalidOrExpiredTokenException("This verification link has already been used.");
         }
 
         if (token.getExpiresAt().isBefore(Instant.now(clock))) {

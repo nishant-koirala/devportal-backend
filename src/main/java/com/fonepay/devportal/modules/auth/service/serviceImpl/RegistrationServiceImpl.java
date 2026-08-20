@@ -68,6 +68,10 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         user = userRepository.save(user);
         userRoleService.assignDefaultRole(user.getUserId(), DEFAULT_ROLE);
+        
+        // The role was saved to the DB, but our in-memory user object doesn't know about it yet!
+        // We must re-fetch the user to get the updated roles list before returning the response.
+        user = userRepository.findById(user.getUserId()).orElse(user);
 
         String rawToken = userTokenService.createAndSaveToken(
                 user.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
