@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.auth.service;
+package com.fonepay.devportal.modules.auth.service.serviceImpl;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -17,6 +17,7 @@ import com.fonepay.devportal.common.exception.TooManyRequestsException;
 import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.auth.document.UserToken;
 import com.fonepay.devportal.modules.auth.repository.UserTokenRepository;
+import com.fonepay.devportal.modules.auth.service.UserTokenService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
