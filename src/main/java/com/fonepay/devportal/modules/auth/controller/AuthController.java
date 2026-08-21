@@ -30,6 +30,7 @@ import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.service.AdminAuthService;
 import com.fonepay.devportal.modules.auth.service.AuthService;
 import com.fonepay.devportal.modules.auth.service.LoginService;
+import com.fonepay.devportal.modules.auth.service.PasswordService;
 import com.fonepay.devportal.modules.auth.service.RegistrationService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +44,7 @@ public class AuthController {
 
     private final LoginService loginService;
     private final RegistrationService registrationService;
+    private final PasswordService passwordService;
     private final AuthService authService;
     private final AdminAuthService adminAuthService;
     private final Clock clock;
@@ -128,7 +130,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request) {
 
-        authService.forgotPassword(request);
+        passwordService.forgotPassword(request);
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
@@ -143,7 +145,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request) {
 
-        authService.resetPassword(request);
+        passwordService.resetPassword(request);
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
