@@ -39,6 +39,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final Clock clock;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return path.startsWith("/api/v1/auth/") && !path.equals("/api/v1/auth/logout");
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             @NonNull HttpServletResponse response,
