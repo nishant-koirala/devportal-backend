@@ -111,4 +111,10 @@ public class UserTokenServiceImpl implements UserTokenService {
             throw new RuntimeException("Failed to initialize SHA-256 algorithm for token hashing", e);
         }
     }
+
+    @Override
+    public void deleteAllTokensForUser(String userId) {
+        tokenRepository.deleteByUserId(userId);
+        log.info("Deleted all tokens for userId: {}", userId);
+    }
 }
