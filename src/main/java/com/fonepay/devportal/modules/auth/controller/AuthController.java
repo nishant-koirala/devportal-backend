@@ -27,6 +27,7 @@ import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
+import com.fonepay.devportal.modules.auth.service.AdminAuthService;
 import com.fonepay.devportal.modules.auth.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final AuthService authService;
+    private final AdminAuthService adminAuthService;
     private final Clock clock;
 
     @PostMapping(ApiRoutes.Auth.LOGIN)
@@ -186,6 +188,106 @@ public class AuthController {
                 .status(HttpStatus.OK.value())
                 .success(true)
                 .message("Login successful")
+                .data(authResponse)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @PostMapping(ApiRoutes.Auth.ADMIN_LOGIN)
+    public ResponseEntity<ApiResponse<AuthResponse>> adminLogin(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = HttpRequestUtil.getClientIp(httpRequest);
+        String userAgent = HttpRequestUtil.getUserAgent(httpRequest);
+
+        AuthResponse authResponse = adminAuthService.adminLogin(request, ipAddress, userAgent);
+
+        return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Admin credentials verified. OTP required.")
+                .data(authResponse)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @PostMapping(ApiRoutes.Auth.EDITOR_LOGIN)
+    public ResponseEntity<ApiResponse<AuthResponse>> editorLogin(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = HttpRequestUtil.getClientIp(httpRequest);
+        String userAgent = HttpRequestUtil.getUserAgent(httpRequest);
+
+        AuthResponse authResponse = adminAuthService.editorLogin(request, ipAddress, userAgent);
+
+        return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Editor credentials verified. OTP required.")
+                .data(authResponse)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @PostMapping(ApiRoutes.Auth.ADMIN_OTP_SETUP)
+    public ResponseEntity<ApiResponse<OtpResponse>> setupAdminOtp(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Invalid or missing Authorization header");
+        }
+
+        String pendingAuthId = authHeader.substring(7);
+        OtpResponse response = adminAuthService.setupOtp(pendingAuthId);
+
+        return ResponseEntity.ok(ApiResponse.<OtpResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("OTP sent")
+                .data(response)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @PostMapping(ApiRoutes.Auth.ADMIN_OTP_VERIFY)
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyAdminOtp(
+            @Valid @RequestBody OtpVerifyRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Invalid or missing Authorization header");
+        }
+
+        String pendingAuthId = authHeader.substring(7);
+        AuthResponse authResponse = adminAuthService.verifyAdminOtp(pendingAuthId, request);
+
+        return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Admin login successful")
+                .data(authResponse)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @PostMapping(ApiRoutes.Auth.EDITOR_OTP_VERIFY)
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyEditorOtp(
+            @Valid @RequestBody OtpVerifyRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Invalid or missing Authorization header");
+        }
+
+        String pendingAuthId = authHeader.substring(7);
+        AuthResponse authResponse = adminAuthService.verifyEditorOtp(pendingAuthId, request);
+
+        return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Editor login successful")
                 .data(authResponse)
                 .timestamp(LocalDateTime.now(clock))
                 .build());
