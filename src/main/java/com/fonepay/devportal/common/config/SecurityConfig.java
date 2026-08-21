@@ -40,7 +40,6 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthEntryPoint)
-                        // Role mismatch on /admin/** and /cms/** returns ApiResponse 403, not Spring HTML.
                         .accessDeniedHandler(jwtAccessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
