@@ -70,6 +70,11 @@ public class LoginServiceImpl implements LoginService {
             throw new UnauthorizedException("Account is deactivated. Please contact support.");
         }
 
+        if (!user.isEmailVerified() || user.getStatus() == UserStatus.PENDING) {
+            log.warn("Login attempt for unverified user: {}", user.getUserId());
+            throw new UnauthorizedException("Please verify your email address before logging in.");
+        }
+
         Instant now = clock.instant();
         user.setLastLoginAt(now);
         userRepository.save(user);

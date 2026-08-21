@@ -15,4 +15,6 @@ public interface UserRepository extends MongoRepository<User, String> {
     boolean existsByEmail(String email);
 
     void deleteByEmailVerifiedFalseAndCreatedAtBefore(java.time.Instant cutoff);
+
+    void deleteByEmailVerifiedFalseAndCreatedAtBeforeAndRolesRoleNameNotIn(java.time.Instant cutoff, java.util.List<String> excludedRoles);
 }
