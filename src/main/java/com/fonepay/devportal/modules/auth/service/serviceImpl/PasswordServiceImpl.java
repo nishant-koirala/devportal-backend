@@ -9,11 +9,13 @@ import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
+import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.modules.auth.document.UserToken;
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
+import com.fonepay.devportal.modules.auth.service.PasswordService;
 import com.fonepay.devportal.modules.auth.service.UserTokenService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
@@ -24,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class PasswordServiceImpl {
+public class PasswordServiceImpl implements PasswordService {
 
     private static final long PASSWORD_RESET_TOKEN_HOURS = 1;
     private static final long RESEND_COOLDOWN_SECONDS = 60;
@@ -39,6 +41,7 @@ public class PasswordServiceImpl {
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
+    @Override
     public void forgotPassword(ForgotPasswordRequest request) {
         String email = request.getEmail().trim().toLowerCase();
 
@@ -51,11 +54,12 @@ public class PasswordServiceImpl {
 
             String rawToken = userTokenService.createAndSaveToken(
                     user.getUserId(), TokenType.PASSWORD_RESET, PASSWORD_RESET_TOKEN_HOURS);
-            String resetUrl = frontendUrl + "/reset-password?token=" + rawToken;
+            String resetUrl = frontendUrl + ApiRoutes.Auth.RESET_PASSWORD + "?token=" + rawToken;
             emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
         });
     }
 
+    @Override
     public void resetPassword(ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new BadRequestException("New password and confirm password do not match");
