@@ -1,6 +1,7 @@
 package com.fonepay.devportal.security;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
@@ -30,6 +31,7 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
             AuthenticationException authException) throws IOException {
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
         ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
@@ -40,5 +42,6 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
                 .build();
 
         response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+        response.getWriter().flush();
     }
 }

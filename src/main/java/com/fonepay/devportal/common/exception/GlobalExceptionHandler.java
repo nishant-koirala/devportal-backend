@@ -151,6 +151,7 @@ public class GlobalExceptionHandler {
             List<String> errors) {
 
         return ResponseEntity.status(status)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(ApiResponse.<Void>builder()
                         .status(status.value())
                         .success(false)
