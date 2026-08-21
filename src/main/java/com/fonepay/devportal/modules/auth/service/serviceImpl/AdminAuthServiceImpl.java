@@ -159,8 +159,8 @@ public class AdminAuthServiceImpl implements AdminAuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        if (user.getStatus() == UserStatus.DEACTIVATED) {
-            log.warn("Login attempt for deactivated user: {}", user.getUserId());
+        if (user.getStatus() == UserStatus.DEACTIVATED || user.getStatus() == UserStatus.INACTIVE) {
+            log.warn("Login attempt for deactivated/inactive user: {}", user.getUserId());
             throw new UnauthorizedException("Account is deactivated. Please contact support.");
         }
 
