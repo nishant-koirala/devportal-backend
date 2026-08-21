@@ -16,6 +16,7 @@ import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.policy.MfaPolicy;
+import com.fonepay.devportal.modules.auth.service.LoginService;
 import com.fonepay.devportal.modules.auth.service.OtpService;
 import com.fonepay.devportal.modules.auth.service.PendingAuthService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
@@ -32,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class LoginServiceImpl {
+public class LoginServiceImpl implements LoginService {
 
     private final UserRepository userRepository;
     private final UserRoleService userRoleService;
@@ -52,6 +53,7 @@ public class LoginServiceImpl {
     @Value("${app.otp.expiration-minutes:5}")
     private int otpExpirationMinutes;
 
+    @Override
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         log.info("Processing login request for email: {}", request.getEmail());
 
@@ -96,6 +98,7 @@ public class LoginServiceImpl {
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 
+    @Override
     public void logout(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new UnauthorizedException("Invalid or missing Authorization header");
@@ -109,6 +112,7 @@ public class LoginServiceImpl {
         }
     }
 
+    @Override
     public String extractUserIdFromToken(String token) {
         try {
             return jwtUtil.extractUserId(token);

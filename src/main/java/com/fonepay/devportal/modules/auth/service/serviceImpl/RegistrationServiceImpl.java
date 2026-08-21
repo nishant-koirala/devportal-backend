@@ -2,10 +2,13 @@ package com.fonepay.devportal.modules.auth.service.serviceImpl;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.fonepay.devportal.modules.auth.service.RegistrationService;
 
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
@@ -27,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class RegistrationServiceImpl {
+public class RegistrationServiceImpl implements RegistrationService {
 
     private static final String DEFAULT_ROLE = "ADMIN";
     private static final long EMAIL_VERIFICATION_TOKEN_HOURS = 24;
@@ -44,15 +47,40 @@ public class RegistrationServiceImpl {
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
+    @Override
     public RegistrationResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException("User already exists with email: " + request.getEmail());
+        String email = request.getEmail().trim().toLowerCase();
+
+        Optional<User> existingUserOpt = userRepository.findByEmail(email);
+
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+            if (existingUser.isEmailVerified()) {
+                throw new UserAlreadyExistsException("User already exists with email: " + email);
+            }
+            
+            // Overwrite existing PENDING user data
+            existingUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            existingUser.setFullName(request.getFullName());
+            existingUser.setCompanyName(request.getCompanyName());
+            existingUser.setUpdatedAt(Instant.now(clock));
+            
+            existingUser = userRepository.save(existingUser);
+            
+            // Delete old tokens and generate a new one
+            userTokenService.deleteAllTokensForUser(existingUser.getUserId());
+            String rawToken = userTokenService.createAndSaveToken(
+                    existingUser.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
+            
+            sendVerificationEmail(existingUser.getEmail(), rawToken);
+            
+            return authMapper.toRegistrationResponse(existingUser);
         }
 
         Instant now = Instant.now(clock);
         User user = new User();
         user.setUserId(IdGenerator.nextUlid());
-        user.setEmail(request.getEmail());
+        user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName());
         user.setCompanyName(request.getCompanyName());
@@ -63,6 +91,10 @@ public class RegistrationServiceImpl {
 
         user = userRepository.save(user);
         userRoleService.assignDefaultRole(user.getUserId(), DEFAULT_ROLE);
+        
+        // The role was saved to the DB, but our in-memory user object doesn't know about it yet!
+        // We must re-fetch the user to get the updated roles list before returning the response.
+        user = userRepository.findById(user.getUserId()).orElse(user);
 
         String rawToken = userTokenService.createAndSaveToken(
                 user.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
@@ -71,6 +103,7 @@ public class RegistrationServiceImpl {
         return authMapper.toRegistrationResponse(user);
     }
 
+    @Override
     public void verifyEmail(String rawToken) {
         UserToken token = userTokenService.validateAndConsumeToken(rawToken, TokenType.EMAIL_VERIFICATION);
 
@@ -87,7 +120,9 @@ public class RegistrationServiceImpl {
         userRepository.save(user);
     }
 
-    public void resendVerificationEmail(String email) {
+    @Override
+    public void resendVerificationEmail(String rawEmail) {
+        String email = rawEmail.trim().toLowerCase();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 

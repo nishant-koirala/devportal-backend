@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -55,5 +57,8 @@ public class User {
 
     @Field("updated_at")
     private Instant updatedAt;
+
+    @Field("roles")
+    private List<AssignedRole> roles = new ArrayList<>();
 
 }

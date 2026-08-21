@@ -12,4 +12,6 @@ public interface UserTokenService {
     UserToken validateAndConsumeToken(String rawToken, TokenType expectedType);
 
     String hashToken(String rawToken);
+
+    void deleteAllTokensForUser(String userId);
 }
