@@ -59,8 +59,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // CMS endpoints for Admin and Editor
                         .requestMatchers("/api/v1/cms/**").hasAnyRole("ADMIN", "EDITOR")
-                        // Departments - any authenticated user
-                        .requestMatchers("/api/v1/departments/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
