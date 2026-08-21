@@ -27,7 +27,7 @@ public interface AuthService {
 
     void resetPassword(ResetPasswordRequest request);
 
-    OtpResponse requestOtp(String tempToken);
+    OtpResponse requestOtp(String pendingAuthId);
 
-    AuthResponse verifyOtp(String tempToken, OtpVerifyRequest request);
+    AuthResponse verifyOtp(String pendingAuthId, OtpVerifyRequest request);
 }

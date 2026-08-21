@@ -64,12 +64,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public OtpResponse requestOtp(String tempToken) {
-        return mfaService.requestOtp(tempToken);
+    public OtpResponse requestOtp(String pendingAuthId) {
+        return mfaService.requestOtp(pendingAuthId);
     }
 
     @Override
-    public AuthResponse verifyOtp(String tempToken, OtpVerifyRequest request) {
-        return mfaService.verifyOtp(tempToken, request);
+    public AuthResponse verifyOtp(String pendingAuthId, OtpVerifyRequest request) {
+        return mfaService.verifyOtp(pendingAuthId, request);
     }
 }

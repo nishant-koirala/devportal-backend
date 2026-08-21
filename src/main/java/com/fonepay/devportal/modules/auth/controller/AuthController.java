@@ -157,8 +157,8 @@ public class AuthController {
             throw new UnauthorizedException("Invalid or missing Authorization header");
         }
 
-        String tempToken = authHeader.substring(7);
-        OtpResponse response = authService.requestOtp(tempToken);
+        String pendingAuthId = authHeader.substring(7);
+        OtpResponse response = authService.requestOtp(pendingAuthId);
 
         return ResponseEntity.ok(ApiResponse.<OtpResponse>builder()
                 .status(HttpStatus.OK.value())
@@ -179,8 +179,8 @@ public class AuthController {
             throw new UnauthorizedException("Invalid or missing Authorization header");
         }
 
-        String tempToken = authHeader.substring(7);
-        AuthResponse authResponse = authService.verifyOtp(tempToken, request);
+        String pendingAuthId = authHeader.substring(7);
+        AuthResponse authResponse = authService.verifyOtp(pendingAuthId, request);
 
         return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
                 .status(HttpStatus.OK.value())
