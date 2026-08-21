@@ -2,6 +2,7 @@ package com.fonepay.devportal.modules.auth.service.serviceImpl;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,8 +51,30 @@ public class RegistrationServiceImpl implements RegistrationService {
     public RegistrationResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
 
-        if (userRepository.existsByEmail(email)) {
-            throw new UserAlreadyExistsException("User already exists with email: " + email);
+        Optional<User> existingUserOpt = userRepository.findByEmail(email);
+
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+            if (existingUser.isEmailVerified()) {
+                throw new UserAlreadyExistsException("User already exists with email: " + email);
+            }
+            
+            // Overwrite existing PENDING user data
+            existingUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            existingUser.setFullName(request.getFullName());
+            existingUser.setCompanyName(request.getCompanyName());
+            existingUser.setUpdatedAt(Instant.now(clock));
+            
+            existingUser = userRepository.save(existingUser);
+            
+            // Delete old tokens and generate a new one
+            userTokenService.deleteAllTokensForUser(existingUser.getUserId());
+            String rawToken = userTokenService.createAndSaveToken(
+                    existingUser.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
+            
+            sendVerificationEmail(existingUser.getEmail(), rawToken);
+            
+            return authMapper.toRegistrationResponse(existingUser);
         }
 
         Instant now = Instant.now(clock);
