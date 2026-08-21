@@ -28,6 +28,7 @@ public final class ApiRoutes {
 
     public static final class Admin {
         public static final String BASE = API_V1 + "/admin";
+        public static final String DEVELOPERS = "/developers";
     }
 
     public static final class Cms {
