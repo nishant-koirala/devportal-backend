@@ -6,7 +6,7 @@ import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 
 public interface AuthService {
 
-    OtpResponse requestOtp(String tempToken);
+    OtpResponse requestOtp(String pendingAuthId);
 
-    AuthResponse verifyOtp(String tempToken, OtpVerifyRequest request);
+    AuthResponse verifyOtp(String pendingAuthId, OtpVerifyRequest request);
 }
