@@ -18,6 +18,12 @@ public final class ApiRoutes {
         public static final String RESET_PASSWORD = "/reset-password";
         public static final String OTP_REQUEST = "/otp/request";
         public static final String OTP_VERIFY = "/otp/verify";
+
+        public static final String ADMIN_LOGIN = "/admin/login";
+        public static final String EDITOR_LOGIN = "/editor/login";
+        public static final String ADMIN_OTP_SETUP = "/admin/otp/setup";
+        public static final String ADMIN_OTP_VERIFY = "/admin/otp/verify";
+        public static final String EDITOR_OTP_VERIFY = "/editor/otp/verify";
     }
 
     public static final class Admin {

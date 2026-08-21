@@ -16,8 +16,8 @@ import com.fonepay.devportal.modules.user.document.AssignedRole;
 @Mapper(componentModel = "spring")
 public interface AuthMapper {
 
-    default AuthResponse toAuthResponse(User user, String tempToken, AuthStatus authStatus) {
-        return toAuthResponse(user, tempToken, null, authStatus);
+    default AuthResponse toAuthResponse(User user, String tokenOrPendingAuthId, AuthStatus authStatus) {
+        return toAuthResponse(user, tokenOrPendingAuthId, null, authStatus);
     }
 
     @Mapping(target = "token", source = "token")

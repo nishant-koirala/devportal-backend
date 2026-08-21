@@ -11,13 +11,14 @@ import org.springframework.stereotype.Service;
 import com.fonepay.devportal.common.constant.enums.AuthStatus;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
+import com.fonepay.devportal.modules.auth.document.PendingAuth;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.policy.MfaPolicy;
 import com.fonepay.devportal.modules.auth.service.LoginService;
 import com.fonepay.devportal.modules.auth.service.OtpService;
-import com.fonepay.devportal.modules.auth.service.TempTokenService;
+import com.fonepay.devportal.modules.auth.service.PendingAuthService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.document.UserSession;
@@ -39,7 +40,7 @@ public class LoginServiceImpl implements LoginService {
     private final UserSessionService userSessionService;
     private final MfaPolicy mfaPolicy;
     private final OtpService otpService;
-    private final TempTokenService tempTokenService;
+    private final PendingAuthService pendingAuthService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -48,6 +49,9 @@ public class LoginServiceImpl implements LoginService {
 
     @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
+
+    @Value("${app.otp.expiration-minutes:5}")
+    private int otpExpirationMinutes;
 
     @Override
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
@@ -72,8 +76,6 @@ public class LoginServiceImpl implements LoginService {
         }
 
         Instant now = clock.instant();
-        UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, jwtExpirationMs);
-
         user.setLastLoginAt(now);
         userRepository.save(user);
 
@@ -81,15 +83,22 @@ public class LoginServiceImpl implements LoginService {
         boolean requiresMfa = mfaPolicy.isMfaRequired(user, roleNames);
 
         if (requiresMfa) {
-            String otpCode = otpService.generateOtp(user);
-            userRepository.save(user);
+            // Generate OTP code and hash
+            String otpCode = otpService.generateOtpCode();
+            String otpHash = otpService.hashOtp(otpCode);
 
+            // Create PendingAuth record with OTP hash (gates session creation)
+            PendingAuth pendingAuth = pendingAuthService.createPendingAuth(user.getUserId(), otpHash, otpExpirationMinutes);
+
+            // Send OTP email
             emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
 
-            String tempToken = tempTokenService.generateTempToken(user.getUserId(), session.getSessionId());
-            return authMapper.toAuthResponse(user, tempToken, AuthStatus.OTP_REQUIRED);
+            // Return pendingAuthId with OTP_REQUIRED status
+            return authMapper.toAuthResponse(user, pendingAuth.getId(), AuthStatus.OTP_REQUIRED);
         }
 
+        // Non-MFA: create session and issue JWT immediately
+        UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, jwtExpirationMs);
         String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
