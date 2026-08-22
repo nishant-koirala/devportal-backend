@@ -126,6 +126,7 @@ public class AuthController {
                         .build());
     }
 
+  //Forgot Password
     @PostMapping(ApiRoutes.Auth.FORGOT_PASSWORD)
     public ResponseEntity<ApiResponse<Void>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request) {
@@ -141,6 +142,7 @@ public class AuthController {
                         .build());
     }
 
+  //Reset Password
     @PostMapping(ApiRoutes.Auth.RESET_PASSWORD)
     public ResponseEntity<ApiResponse<Void>> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request) {
