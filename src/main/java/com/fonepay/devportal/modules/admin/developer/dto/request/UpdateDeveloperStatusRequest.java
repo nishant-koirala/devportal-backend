@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.admin.dto.request;
+package com.fonepay.devportal.modules.admin.developer.dto.request;
 
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 

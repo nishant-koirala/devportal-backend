@@ -1,6 +1,8 @@
-package com.fonepay.devportal.modules.admin.developer.activity.dto;
+package com.fonepay.devportal.modules.admin.developer.dto;
 
 import java.time.Instant;
+
+import com.fonepay.devportal.common.constant.enums.ActivityType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,12 +13,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginHistoryResponse {
+public class ActivityResponse {
 
     private String id;
     private String userId;
-    private Instant loginAt;
-    private String ipAddress;
-    private String userAgent;
-    private boolean success;
+    private ActivityType type;
+    private Instant occurredAt;
 }

@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.admin.dto.response;
+package com.fonepay.devportal.modules.admin.developer.dto.response;
 
 import java.time.Instant;
 import java.util.List;

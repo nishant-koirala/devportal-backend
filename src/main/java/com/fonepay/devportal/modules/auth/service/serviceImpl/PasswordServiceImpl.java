@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
-import com.fonepay.devportal.modules.admin.developer.activity.service.ActivityRecordingService;
+import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;

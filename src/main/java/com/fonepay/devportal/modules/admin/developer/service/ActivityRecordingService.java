@@ -1,9 +1,9 @@
-package com.fonepay.devportal.modules.admin.developer.activity.service;
+package com.fonepay.devportal.modules.admin.developer.service;
 
 import com.fonepay.devportal.common.constant.enums.ActivityType;
-import com.fonepay.devportal.modules.admin.developer.activity.dto.ActivityResponse;
-import com.fonepay.devportal.modules.admin.developer.activity.dto.LoginHistoryResponse;
-import com.fonepay.devportal.modules.admin.developer.activity.dto.PageResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.ActivityResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.LoginHistoryResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.PageResponse;
 
 public interface ActivityRecordingService {
 

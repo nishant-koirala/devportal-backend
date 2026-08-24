@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.admin.service;
+package com.fonepay.devportal.modules.admin.developer.service.impl;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -11,8 +11,9 @@ import org.springframework.stereotype.Service;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
-import com.fonepay.devportal.modules.admin.dto.request.UpdateDeveloperStatusRequest;
-import com.fonepay.devportal.modules.admin.dto.response.DeveloperDetailResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.request.UpdateDeveloperStatusRequest;
+import com.fonepay.devportal.modules.admin.developer.dto.response.DeveloperDetailResponse;
+import com.fonepay.devportal.modules.admin.developer.service.DeveloperAdminService;
 import com.fonepay.devportal.modules.user.document.AssignedRole;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
