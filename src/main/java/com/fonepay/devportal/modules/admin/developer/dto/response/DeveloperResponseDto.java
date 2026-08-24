@@ -25,5 +25,4 @@ public class DeveloperResponseDto {
     private UserStatus accountStatus;
     private boolean emailVerified;
     private List<String> roles;
-    private String departmentId;
 }

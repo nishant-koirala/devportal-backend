@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.user.service;
+package com.fonepay.devportal.modules.user.service.serviceImpl;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -11,6 +11,7 @@ import com.fonepay.devportal.common.constant.enums.SessionStatus;
 import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.user.document.UserSession;
 import com.fonepay.devportal.modules.user.repository.UserSessionRepository;
+import com.fonepay.devportal.modules.user.service.UserSessionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
