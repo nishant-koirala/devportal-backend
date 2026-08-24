@@ -2,6 +2,7 @@ package com.fonepay.devportal.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -38,7 +40,6 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthEntryPoint)
-                        // Role mismatch on /admin/** and /cms/** returns ApiResponse 403, not Spring HTML.
                         .accessDeniedHandler(jwtAccessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -49,15 +50,15 @@ public class SecurityConfig {
                                 "/api/v1/auth/resend-verification",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
-                                "/api/v1/auth/otp/**")
+                                "/api/v1/auth/otp/**",
+                                "/api/v1/auth/admin/**",
+                                "/api/v1/auth/editor/**")
                         .permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         // Admin-only endpoints
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // CMS endpoints for Admin and Editor
                         .requestMatchers("/api/v1/cms/**").hasAnyRole("ADMIN", "EDITOR")
-                        // Departments - any authenticated user
-                        .requestMatchers("/api/v1/departments/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

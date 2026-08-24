@@ -1,6 +1,7 @@
 package com.fonepay.devportal.modules.auth.mapper;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -10,12 +11,13 @@ import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.AssignedRole;
 
 @Mapper(componentModel = "spring")
 public interface AuthMapper {
 
-    default AuthResponse toAuthResponse(User user, String tempToken, AuthStatus authStatus) {
-        return toAuthResponse(user, tempToken, null, authStatus);
+    default AuthResponse toAuthResponse(User user, String tokenOrPendingAuthId, AuthStatus authStatus) {
+        return toAuthResponse(user, tokenOrPendingAuthId, null, authStatus);
     }
 
     @Mapping(target = "token", source = "token")
@@ -27,4 +29,13 @@ public interface AuthMapper {
     @Mapping(target = "message", source = "message")
     @Mapping(target = "expiresInSeconds", source = "expiresInSeconds")
     OtpResponse toOtpResponse(String message, int expiresInSeconds);
+
+    default List<String> mapRoles(List<AssignedRole> assignedRoles) {
+        if (assignedRoles == null) {
+            return null;
+        }
+        return assignedRoles.stream()
+                .map(AssignedRole::getRoleName)
+                .collect(Collectors.toList());
+    }
 }

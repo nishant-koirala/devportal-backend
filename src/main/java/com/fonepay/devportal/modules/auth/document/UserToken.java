@@ -31,6 +31,7 @@ public class UserToken {
 
     private TokenType tokenType;
 
+    @Indexed(expireAfter = "0s")
     private Instant expiresAt;
 
     private Instant usedAt;

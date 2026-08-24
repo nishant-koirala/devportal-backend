@@ -82,7 +82,7 @@ public class UserTokenServiceImpl implements UserTokenService {
         }
 
         if (token.getUsedAt() != null) {
-            throw new InvalidOrExpiredTokenException("Token has already been used");
+            throw new InvalidOrExpiredTokenException("This verification link has already been used.");
         }
 
         if (token.getExpiresAt().isBefore(Instant.now(clock))) {
@@ -110,5 +110,11 @@ public class UserTokenServiceImpl implements UserTokenService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to initialize SHA-256 algorithm for token hashing", e);
         }
+    }
+
+    @Override
+    public void deleteAllTokensForUser(String userId) {
+        tokenRepository.deleteByUserId(userId);
+        log.info("Deleted all tokens for userId: {}", userId);
     }
 }
