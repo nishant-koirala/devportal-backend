@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
+import com.fonepay.devportal.modules.admin.developer.activity.service.ActivityRecordingService;
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
@@ -37,6 +39,7 @@ public class PasswordServiceImpl implements PasswordService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
+    private final ActivityRecordingService activityRecordingService;
 
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
@@ -76,5 +79,6 @@ public class PasswordServiceImpl implements PasswordService {
         userRepository.save(user);
 
         userSessionService.revokeAllActiveSessions(user.getUserId());
+        activityRecordingService.record(user.getUserId(), ActivityType.PASSWORD_RESET);
     }
 }
