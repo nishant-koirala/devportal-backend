@@ -65,6 +65,7 @@ public class LoginServiceImpl implements LoginService {
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             log.warn("Password mismatch for email: {}", request.getEmail());
+            // Known user: record failed login for admin history, then same 401 as before.
             activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, false);
             throw new UnauthorizedException("Invalid email or password");
         }
@@ -106,6 +107,7 @@ public class LoginServiceImpl implements LoginService {
         // Non-MFA: create session and issue JWT immediately
         UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, jwtExpirationMs);
         String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
+        // Do not record success when MFA is required (session not created yet).
         activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, true);
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
@@ -124,6 +126,7 @@ public class LoginServiceImpl implements LoginService {
             userSessionService.revokeSessionBySessionId(sessionId);
         }
         if (userId != null) {
+            // Person 3: logout is an activity event, not a login-history row.
             activityRecordingService.record(userId, ActivityType.LOGOUT);
         }
     }
