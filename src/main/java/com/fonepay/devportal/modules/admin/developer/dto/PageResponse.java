@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.admin.developer.activity.dto;
+package com.fonepay.devportal.modules.admin.developer.dto;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.admin.developer.activity.document;
+package com.fonepay.devportal.modules.admin.developer.document;
 
 import java.time.Instant;
 

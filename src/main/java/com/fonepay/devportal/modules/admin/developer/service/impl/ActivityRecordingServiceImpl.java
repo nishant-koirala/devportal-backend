@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.admin.developer.activity.service.serviceImpl;
+package com.fonepay.devportal.modules.admin.developer.service.impl;
 
 import java.time.Clock;
 
@@ -11,12 +11,12 @@ import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.common.util.IdGenerator;
-import com.fonepay.devportal.modules.admin.developer.activity.document.Activity;
-import com.fonepay.devportal.modules.admin.developer.activity.dto.ActivityResponse;
-import com.fonepay.devportal.modules.admin.developer.activity.dto.LoginHistoryResponse;
-import com.fonepay.devportal.modules.admin.developer.activity.dto.PageResponse;
-import com.fonepay.devportal.modules.admin.developer.activity.repository.ActivityRepository;
-import com.fonepay.devportal.modules.admin.developer.activity.service.ActivityRecordingService;
+import com.fonepay.devportal.modules.admin.developer.document.Activity;
+import com.fonepay.devportal.modules.admin.developer.dto.ActivityResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.LoginHistoryResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.PageResponse;
+import com.fonepay.devportal.modules.admin.developer.repository.ActivityRepository;
+import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;

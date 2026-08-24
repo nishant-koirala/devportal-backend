@@ -13,7 +13,7 @@ import com.fonepay.devportal.modules.auth.service.RegistrationService;
 import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
-import com.fonepay.devportal.modules.admin.developer.activity.service.ActivityRecordingService;
+import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
 import com.fonepay.devportal.common.exception.EmailAlreadyVerifiedException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.common.exception.UserAlreadyExistsException;

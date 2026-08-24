@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.admin.controller;
+package com.fonepay.devportal.modules.admin.developer.controller;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -12,17 +12,21 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
+import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.dto.ApiResponse;
-import com.fonepay.devportal.common.dto.PageResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.ActivityResponse;
+import com.fonepay.devportal.modules.admin.developer.dto.LoginHistoryResponse;
 import com.fonepay.devportal.modules.admin.developer.dto.request.DeveloperSearchCriteriaDto;
+import com.fonepay.devportal.modules.admin.developer.dto.request.UpdateDeveloperStatusRequest;
+import com.fonepay.devportal.modules.admin.developer.dto.response.DeveloperDetailResponse;
 import com.fonepay.devportal.modules.admin.developer.dto.response.DeveloperResponseDto;
+import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
+import com.fonepay.devportal.modules.admin.developer.service.DeveloperAdminService;
 import com.fonepay.devportal.modules.admin.developer.service.DeveloperManagementService;
-import com.fonepay.devportal.modules.admin.dto.request.UpdateDeveloperStatusRequest;
-import com.fonepay.devportal.modules.admin.dto.response.DeveloperDetailResponse;
-import com.fonepay.devportal.modules.admin.service.DeveloperAdminService;
 import com.fonepay.devportal.security.annotation.RequireAdmin;
 
 import jakarta.validation.Valid;
@@ -39,15 +43,17 @@ public class AdminDeveloperController {
 
     private final DeveloperAdminService developerAdminService;
     private final DeveloperManagementService developerManagementService;
+    private final ActivityRecordingService activityRecordingService;
     private final Clock clock;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<DeveloperResponseDto>>> getDevelopers(
+    public ResponseEntity<ApiResponse<com.fonepay.devportal.common.dto.PageResponse<DeveloperResponseDto>>> getDevelopers(
             @Valid @ModelAttribute DeveloperSearchCriteriaDto criteria) {
         log.info("Admin fetching developers list with criteria: {}", criteria);
-        PageResponse<DeveloperResponseDto> response = developerManagementService.getDevelopers(criteria);
+        com.fonepay.devportal.common.dto.PageResponse<DeveloperResponseDto> response =
+                developerManagementService.getDevelopers(criteria);
 
-        return ResponseEntity.ok(ApiResponse.<PageResponse<DeveloperResponseDto>>builder()
+        return ResponseEntity.ok(ApiResponse.<com.fonepay.devportal.common.dto.PageResponse<DeveloperResponseDto>>builder()
                 .status(HttpStatus.OK.value())
                 .success(true)
                 .message("Developers retrieved successfully")
@@ -82,6 +88,45 @@ public class AdminDeveloperController {
                 .success(true)
                 .message("Developer status updated successfully")
                 .data(response)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @GetMapping("/{userId}/activity")
+    public ResponseEntity<ApiResponse<com.fonepay.devportal.modules.admin.developer.dto.PageResponse<ActivityResponse>>> getActivity(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(required = false) ActivityType type) {
+
+        com.fonepay.devportal.modules.admin.developer.dto.PageResponse<ActivityResponse> data =
+                activityRecordingService.getActivity(userId, page, size, sortDirection, type);
+
+        return ResponseEntity.ok(ApiResponse.<com.fonepay.devportal.modules.admin.developer.dto.PageResponse<ActivityResponse>>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Developer activity retrieved")
+                .data(data)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @GetMapping("/{userId}/login-history")
+    public ResponseEntity<ApiResponse<com.fonepay.devportal.modules.admin.developer.dto.PageResponse<LoginHistoryResponse>>> getLoginHistory(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "DESC") String sortDirection) {
+
+        com.fonepay.devportal.modules.admin.developer.dto.PageResponse<LoginHistoryResponse> data =
+                activityRecordingService.getLoginHistory(userId, page, size, sortDirection);
+
+        return ResponseEntity.ok(ApiResponse.<com.fonepay.devportal.modules.admin.developer.dto.PageResponse<LoginHistoryResponse>>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Login history retrieved")
+                .data(data)
                 .timestamp(LocalDateTime.now(clock))
                 .build());
     }

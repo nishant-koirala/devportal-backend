@@ -12,7 +12,7 @@ import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.constant.enums.AuthStatus;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
-import com.fonepay.devportal.modules.admin.developer.activity.service.ActivityRecordingService;
+import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
 import com.fonepay.devportal.modules.auth.document.PendingAuth;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
