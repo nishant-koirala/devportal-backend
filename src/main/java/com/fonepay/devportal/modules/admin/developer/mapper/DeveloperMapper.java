@@ -22,7 +22,6 @@ public interface DeveloperMapper {
     @Mapping(target = "lastLogin", source = "lastLoginAt")
     @Mapping(target = "accountStatus", source = "status")
     @Mapping(target = "emailVerified", source = "emailVerified")
-    @Mapping(target = "departmentId", source = "departmentId")
     @Mapping(target = "roles", source = "roles")
     DeveloperResponseDto toDto(User user);
 

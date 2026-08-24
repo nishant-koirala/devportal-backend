@@ -25,12 +25,10 @@ public class UserCleanupService {
     public void cleanupStalePendingUsers() {
         log.info("Starting cleanup of stale unverified users...");
         Instant cutoff = Instant.now(clock).minus(24, ChronoUnit.HOURS);
-        
-        // TODO (follow-up, not blocking): also delete UserToken rows for the userIds being removed, since MongoDB has no cascade delete.
-        // We exclude internal roles like "ADMIN" and "EDITOR" so they don't get accidentally deleted.
+
         java.util.List<String> internalRoles = java.util.List.of("ADMIN", "EDITOR");
         userRepository.deleteByEmailVerifiedFalseAndCreatedAtBeforeAndRolesRoleNameNotIn(cutoff, internalRoles);
-        
+
         log.info("Finished cleanup of stale unverified users.");
     }
 }
