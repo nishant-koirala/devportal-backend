@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/** Admin login-history API row: one login attempt, success or fail. */
 @Data
 @Builder
 @NoArgsConstructor

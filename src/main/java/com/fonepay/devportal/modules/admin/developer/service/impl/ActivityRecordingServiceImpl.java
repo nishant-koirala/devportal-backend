@@ -31,6 +31,7 @@ public class ActivityRecordingServiceImpl implements ActivityRecordingService {
 
     @Override
     public void record(String userId, ActivityType type) {
+        // Timeline event only — no IP/success fields.
         activityRepository.save(Activity.builder()
                 .id(IdGenerator.nextUlid())
                 .userId(userId)
@@ -41,6 +42,7 @@ public class ActivityRecordingServiceImpl implements ActivityRecordingService {
 
     @Override
     public void recordLogin(String userId, String ipAddress, String userAgent, boolean success) {
+        // One LOGIN row is used by both activity and login-history APIs.
         activityRepository.save(Activity.builder()
                 .id(IdGenerator.nextUlid())
                 .userId(userId)
@@ -59,6 +61,7 @@ public class ActivityRecordingServiceImpl implements ActivityRecordingService {
         ensureUserExists(userId);
         PageRequest pageable = pageRequest(page, size, sortDirection, "occurredAt");
 
+        // Optional ?type= filter; otherwise return every event for this developer.
         Page<Activity> result = (type == null)
                 ? activityRepository.findByUserId(userId, pageable)
                 : activityRepository.findByUserIdAndType(userId, type, pageable);
@@ -78,6 +81,7 @@ public class ActivityRecordingServiceImpl implements ActivityRecordingService {
             String userId, int page, int size, String sortDirection) {
 
         ensureUserExists(userId);
+        // Login history is LOGIN rows only (success and failure).
         Page<Activity> result = activityRepository.findByUserIdAndType(
                 userId, ActivityType.LOGIN, pageRequest(page, size, sortDirection, "occurredAt"));
 

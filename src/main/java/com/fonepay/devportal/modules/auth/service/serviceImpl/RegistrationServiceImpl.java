@@ -121,6 +121,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         user.setStatus(UserStatus.ACTIVE);
         user.setUpdatedAt(Instant.now(clock));
         userRepository.save(user);
+        // Person 3: email verified appears on the admin activity timeline.
         activityRecordingService.record(user.getUserId(), ActivityType.EMAIL_VERIFIED);
     }
 

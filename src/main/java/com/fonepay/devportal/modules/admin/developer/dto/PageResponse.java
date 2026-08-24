@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/** One page of activity or login-history rows, plus totals for the admin UI. */
 @Data
 @Builder
 @NoArgsConstructor

@@ -92,6 +92,7 @@ public class AdminDeveloperController {
                 .build());
     }
 
+    /** Person 3: paginated activity timeline for one developer (ADMIN only). */
     @GetMapping("/{userId}/activity")
     public ResponseEntity<ApiResponse<com.fonepay.devportal.modules.admin.developer.dto.PageResponse<ActivityResponse>>> getActivity(
             @PathVariable String userId,
@@ -112,6 +113,7 @@ public class AdminDeveloperController {
                 .build());
     }
 
+    /** Person 3: paginated login attempts (time, IP, user agent, success/fail). */
     @GetMapping("/{userId}/login-history")
     public ResponseEntity<ApiResponse<com.fonepay.devportal.modules.admin.developer.dto.PageResponse<LoginHistoryResponse>>> getLoginHistory(
             @PathVariable String userId,

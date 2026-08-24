@@ -79,6 +79,7 @@ public class PasswordServiceImpl implements PasswordService {
         userRepository.save(user);
 
         userSessionService.revokeAllActiveSessions(user.getUserId());
+        // Person 3: successful password reset appears on the admin activity timeline.
         activityRecordingService.record(user.getUserId(), ActivityType.PASSWORD_RESET);
     }
 }

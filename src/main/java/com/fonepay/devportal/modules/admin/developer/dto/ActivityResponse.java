@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/** Admin activity API row: what happened and when (no IP). */
 @Data
 @Builder
 @NoArgsConstructor
