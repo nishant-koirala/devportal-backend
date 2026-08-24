@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -23,7 +24,6 @@ import com.fonepay.devportal.modules.admin.developer.service.DeveloperManagement
 import com.fonepay.devportal.modules.admin.dto.request.UpdateDeveloperStatusRequest;
 import com.fonepay.devportal.modules.admin.dto.response.DeveloperDetailResponse;
 import com.fonepay.devportal.modules.admin.service.DeveloperAdminService;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Admin.DEVELOPERS)
-@RequireAdmin
+@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminDeveloperController {
 

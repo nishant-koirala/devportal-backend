@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,14 +19,13 @@ import com.fonepay.devportal.modules.admin.developer.activity.dto.ActivityRespon
 import com.fonepay.devportal.modules.admin.developer.activity.dto.LoginHistoryResponse;
 import com.fonepay.devportal.modules.admin.developer.activity.dto.PageResponse;
 import com.fonepay.devportal.modules.admin.developer.activity.service.ActivityRecordingService;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping(ApiRoutes.Admin.DEVELOPERS)
 @RequiredArgsConstructor
-@RequireAdmin
+@PreAuthorize("hasRole('ADMIN')")
 public class DeveloperActivityController {
 
     private final ActivityRecordingService activityRecordingService;
