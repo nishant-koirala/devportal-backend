@@ -28,6 +28,7 @@ import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingSe
 import com.fonepay.devportal.modules.admin.developer.service.DeveloperAdminService;
 import com.fonepay.devportal.modules.admin.developer.service.DeveloperManagementService;
 import com.fonepay.devportal.security.annotation.RequireAdmin;
+import com.fonepay.devportal.common.dto.PageResponse;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,13 +48,13 @@ public class AdminDeveloperController {
     private final Clock clock;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<com.fonepay.devportal.common.dto.PageResponse<DeveloperResponseDto>>> getDevelopers(
+    public ResponseEntity<ApiResponse<PageResponse<DeveloperResponseDto>>> getDevelopers(
             @Valid @ModelAttribute DeveloperSearchCriteriaDto criteria) {
         log.info("Admin fetching developers list with criteria: {}", criteria);
-        com.fonepay.devportal.common.dto.PageResponse<DeveloperResponseDto> response =
+        PageResponse<DeveloperResponseDto> response =
                 developerManagementService.getDevelopers(criteria);
 
-        return ResponseEntity.ok(ApiResponse.<com.fonepay.devportal.common.dto.PageResponse<DeveloperResponseDto>>builder()
+        return ResponseEntity.ok(ApiResponse.<PageResponse<DeveloperResponseDto>>builder()
                 .status(HttpStatus.OK.value())
                 .success(true)
                 .message("Developers retrieved successfully")
