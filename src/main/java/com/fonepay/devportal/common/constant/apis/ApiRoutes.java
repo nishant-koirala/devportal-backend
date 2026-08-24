@@ -31,6 +31,8 @@ public final class ApiRoutes {
         public static final String DEVELOPERS = BASE + "/developers";
         public static final String DEVELOPER_BY_ID = "/{userId}";
         public static final String DEVELOPER_STATUS = "/{userId}/status";
+        public static final String DEVELOPER_ACTIVITY = "/{userId}/activity";
+        public static final String DEVELOPER_LOGIN_HISTORY = "/{userId}/login-history";
     }
 
     public static final class Cms {

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fonepay.devportal.common.constant.PaginationConstants;
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.dto.ApiResponse;
@@ -94,19 +95,19 @@ public class AdminDeveloperController {
                                 .build());
         }
 
-        @GetMapping("/{userId}/activity")
-        public ResponseEntity<ApiResponse<com.fonepay.devportal.modules.admin.developer.dto.response.PageResponse<ActivityResponse>>> getActivity(
+        @GetMapping(ApiRoutes.Admin.DEVELOPER_ACTIVITY)
+        public ResponseEntity<ApiResponse<PageResponse<ActivityResponse>>> getActivity(
                         @PathVariable String userId,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "20") int size,
-                        @RequestParam(defaultValue = "DESC") String sortDirection,
+                        @RequestParam(defaultValue = "" + PaginationConstants.DEFAULT_PAGE_NUMBER) int page,
+                        @RequestParam(defaultValue = "" + PaginationConstants.DEFAULT_PAGE_SIZE) int size,
+                        @RequestParam(defaultValue = PaginationConstants.DEFAULT_SORT_DIRECTION) String sortDirection,
                         @RequestParam(required = false) ActivityType type) {
 
-                com.fonepay.devportal.modules.admin.developer.dto.response.PageResponse<ActivityResponse> data = activityRecordingService
+                PageResponse<ActivityResponse> data = activityRecordingService
                                 .getActivity(userId, page, size, sortDirection, type);
 
                 return ResponseEntity.ok(
-                                ApiResponse.<com.fonepay.devportal.modules.admin.developer.dto.response.PageResponse<ActivityResponse>>builder()
+                                ApiResponse.<PageResponse<ActivityResponse>>builder()
                                                 .status(HttpStatus.OK.value())
                                                 .success(true)
                                                 .message("Developer activity retrieved")
@@ -115,18 +116,18 @@ public class AdminDeveloperController {
                                                 .build());
         }
 
-        @GetMapping("/{userId}/login-history")
-        public ResponseEntity<ApiResponse<com.fonepay.devportal.modules.admin.developer.dto.response.PageResponse<LoginHistoryResponse>>> getLoginHistory(
+        @GetMapping(ApiRoutes.Admin.DEVELOPER_LOGIN_HISTORY)
+        public ResponseEntity<ApiResponse<PageResponse<LoginHistoryResponse>>> getLoginHistory(
                         @PathVariable String userId,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "20") int size,
-                        @RequestParam(defaultValue = "DESC") String sortDirection) {
+                        @RequestParam(defaultValue = "" + PaginationConstants.DEFAULT_PAGE_NUMBER) int page,
+                        @RequestParam(defaultValue = "" + PaginationConstants.DEFAULT_PAGE_SIZE) int size,
+                        @RequestParam(defaultValue = PaginationConstants.DEFAULT_SORT_DIRECTION) String sortDirection) {
 
-                com.fonepay.devportal.modules.admin.developer.dto.response.PageResponse<LoginHistoryResponse> data = activityRecordingService
+                PageResponse<LoginHistoryResponse> data = activityRecordingService
                                 .getLoginHistory(userId, page, size, sortDirection);
 
                 return ResponseEntity.ok(
-                                ApiResponse.<com.fonepay.devportal.modules.admin.developer.dto.response.PageResponse<LoginHistoryResponse>>builder()
+                                ApiResponse.<PageResponse<LoginHistoryResponse>>builder()
                                                 .status(HttpStatus.OK.value())
                                                 .success(true)
                                                 .message("Login history retrieved")

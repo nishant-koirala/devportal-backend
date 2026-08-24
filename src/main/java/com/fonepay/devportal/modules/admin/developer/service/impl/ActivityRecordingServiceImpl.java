@@ -7,14 +7,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import com.fonepay.devportal.common.constant.PaginationConstants;
 import com.fonepay.devportal.common.constant.enums.ActivityType;
+import com.fonepay.devportal.common.dto.PageResponse;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.admin.developer.document.Activity;
 import com.fonepay.devportal.modules.admin.developer.dto.response.ActivityResponse;
 import com.fonepay.devportal.modules.admin.developer.dto.response.LoginHistoryResponse;
-import com.fonepay.devportal.modules.admin.developer.dto.response.PageResponse;
 import com.fonepay.devportal.modules.admin.developer.repository.ActivityRepository;
 import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
@@ -63,14 +64,7 @@ public class ActivityRecordingServiceImpl implements ActivityRecordingService {
                 ? activityRepository.findByUserId(userId, pageable)
                 : activityRepository.findByUserIdAndType(userId, type, pageable);
 
-        return PageResponse.<ActivityResponse>builder()
-                .content(result.getContent().stream().map(this::toActivity).toList())
-                .page(result.getNumber())
-                .size(result.getSize())
-                .totalElements(result.getTotalElements())
-                .totalPages(result.getTotalPages())
-                .last(result.isLast())
-                .build();
+        return PageResponse.of(result, result.getContent().stream().map(this::toActivity).toList());
     }
 
     @Override
@@ -81,14 +75,7 @@ public class ActivityRecordingServiceImpl implements ActivityRecordingService {
         Page<Activity> result = activityRepository.findByUserIdAndType(
                 userId, ActivityType.LOGIN, pageRequest(page, size, sortDirection, "occurredAt"));
 
-        return PageResponse.<LoginHistoryResponse>builder()
-                .content(result.getContent().stream().map(this::toLoginHistory).toList())
-                .page(result.getNumber())
-                .size(result.getSize())
-                .totalElements(result.getTotalElements())
-                .totalPages(result.getTotalPages())
-                .last(result.isLast())
-                .build();
+        return PageResponse.of(result, result.getContent().stream().map(this::toLoginHistory).toList());
     }
 
     private void ensureUserExists(String userId) {
@@ -101,12 +88,13 @@ public class ActivityRecordingServiceImpl implements ActivityRecordingService {
         if (page < 0) {
             throw new BadRequestException("page must be 0 or greater");
         }
-        if (size < 1 || size > 100) {
-            throw new BadRequestException("size must be between 1 and 100");
+        if (size < 1 || size > PaginationConstants.MAX_PAGE_SIZE) {
+            throw new BadRequestException("size must be between 1 and " + PaginationConstants.MAX_PAGE_SIZE);
         }
         Sort.Direction direction;
         try {
-            direction = Sort.Direction.fromString(sortDirection == null ? "DESC" : sortDirection);
+            direction = Sort.Direction.fromString(
+                    sortDirection == null ? PaginationConstants.DEFAULT_SORT_DIRECTION : sortDirection);
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("sortDirection must be ASC or DESC");
         }
