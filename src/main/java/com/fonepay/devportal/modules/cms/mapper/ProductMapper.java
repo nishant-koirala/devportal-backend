@@ -1,6 +1,5 @@
 package com.fonepay.devportal.modules.cms.mapper;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.mapstruct.Mapper;

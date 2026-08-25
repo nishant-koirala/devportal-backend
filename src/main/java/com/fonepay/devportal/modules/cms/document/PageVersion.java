@@ -1,11 +1,14 @@
 package com.fonepay.devportal.modules.cms.document;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,9 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "page_versions")
+@CompoundIndexes({
+        @CompoundIndex(name = "page_version_idx", def = "{'page_id': 1, 'version_number': -1}")
+})
 public class PageVersion {
 
     @Id
@@ -29,6 +36,7 @@ public class PageVersion {
     @Field("version_number")
     private int versionNumber;
 
+    @Builder.Default
     @Field("published_blocks")
     private List<Block> publishedBlocks = new ArrayList<>();
 

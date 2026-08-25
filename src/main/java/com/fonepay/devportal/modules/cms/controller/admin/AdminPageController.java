@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.cms.controller;
+package com.fonepay.devportal.modules.cms.controller.admin;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -21,20 +21,25 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
+import com.fonepay.devportal.common.util.HttpRequestUtil;
 import com.fonepay.devportal.modules.cms.document.Block;
 import com.fonepay.devportal.modules.cms.dto.request.BlockCreateRequest;
 import com.fonepay.devportal.modules.cms.dto.request.BlockReorderRequest;
 import com.fonepay.devportal.modules.cms.dto.request.BlockUpdateRequest;
 import com.fonepay.devportal.modules.cms.dto.request.CreatePageRequest;
+import com.fonepay.devportal.modules.cms.dto.request.PublishPageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.ReorderPagesRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdatePageRequest;
 import com.fonepay.devportal.modules.cms.dto.response.PageMetaResponse;
 import com.fonepay.devportal.modules.cms.dto.response.PageTreeNodeResponse;
+import com.fonepay.devportal.modules.cms.dto.response.PageVersionResponse;
 import com.fonepay.devportal.modules.cms.service.BlockService;
 import com.fonepay.devportal.modules.cms.service.PageService;
+import com.fonepay.devportal.modules.cms.service.PublishService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.security.annotation.RequireEditor;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +55,7 @@ public class AdminPageController {
 
     private final PageService pageService;
     private final BlockService blockService;
+    private final PublishService publishService;
     private final Clock clock;
 
     @PostMapping(ApiRoutes.Cms.PRODUCT_PAGES)
@@ -143,6 +149,53 @@ public class AdminPageController {
         blockService.deleteBlock(pageId, blockId);
 
         return ResponseEntity.ok(success(HttpStatus.OK, "Block deleted successfully", null));
+    }
+
+    @PostMapping(ApiRoutes.Cms.PAGE_PUBLISH)
+    public ResponseEntity<ApiResponse<PageMetaResponse>> publishPage(
+            @PathVariable @NotBlank String pageId,
+            @Valid @RequestBody PublishPageRequest request,
+            @AuthenticationPrincipal User user,
+            HttpServletRequest httpRequest) {
+
+        String adminId = currentUserId(user);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("Publishing page {} by admin {}", pageId, adminId);
+
+        PageMetaResponse data = publishService.publishPage(pageId, request, adminId, sourceIp);
+        return ResponseEntity.ok(success(HttpStatus.OK, "Page published successfully", data));
+    }
+
+    @GetMapping(ApiRoutes.Cms.PAGE_VERSIONS)
+    public ResponseEntity<ApiResponse<List<PageVersionResponse>>> getPageVersions(
+            @PathVariable @NotBlank String pageId) {
+
+        List<PageVersionResponse> versions = publishService.getPageVersions(pageId);
+        return ResponseEntity.ok(success(HttpStatus.OK, "Page versions retrieved successfully", versions));
+    }
+
+    @GetMapping(ApiRoutes.Cms.PAGE_VERSION_BY_NUMBER)
+    public ResponseEntity<ApiResponse<PageVersionResponse>> getPageVersion(
+            @PathVariable @NotBlank String pageId,
+            @PathVariable int versionNumber) {
+
+        PageVersionResponse version = publishService.getPageVersion(pageId, versionNumber);
+        return ResponseEntity.ok(success(HttpStatus.OK, "Page version retrieved successfully", version));
+    }
+
+    @PostMapping(ApiRoutes.Cms.PAGE_REVERT)
+    public ResponseEntity<ApiResponse<PageMetaResponse>> revertPageVersion(
+            @PathVariable @NotBlank String pageId,
+            @PathVariable int versionNumber,
+            @AuthenticationPrincipal User user,
+            HttpServletRequest httpRequest) {
+
+        String adminId = currentUserId(user);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("Reverting page {} to version {} by admin {}", pageId, versionNumber, adminId);
+
+        PageMetaResponse data = publishService.revertToVersion(pageId, versionNumber, adminId, sourceIp);
+        return ResponseEntity.ok(success(HttpStatus.OK, "Page reverted to version " + versionNumber + " successfully", data));
     }
 
     private String currentUserId(User user) {
