@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.cms.service.serviceImpl;
+package com.fonepay.devportal.modules.cms.service.impl;
 
 import java.time.Clock;
 import java.time.Instant;
