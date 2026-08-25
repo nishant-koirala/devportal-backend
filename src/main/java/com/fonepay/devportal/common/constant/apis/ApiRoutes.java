@@ -1,4 +1,4 @@
-package com.fonepay.devportal.common.constant.apis;
+package com.fonepay.devportal.common.constant.apis.ApiRoutes;
 
 public final class ApiRoutes {
 
@@ -33,6 +33,21 @@ public final class ApiRoutes {
         public static final String DEVELOPER_STATUS = "/{userId}/status";
         public static final String DEVELOPER_ACTIVITY = "/{userId}/activity";
         public static final String DEVELOPER_LOGIN_HISTORY = "/{userId}/login-history";
+
+        public static final String PRODUCTS = BASE + "/products";
+        public static final String PRODUCT_BY_ID = "/{id}";
+        public static final String PRODUCT_STATUS = "/{id}/status";
+        public static final String PRODUCT_RESOURCES = "/{id}/resources";
+        public static final String PRODUCT_RESOURCE_BY_ID = "/{id}/resources/{resourceId}";
+
+        public static final String AUDIT_LOGS = BASE + "/audit-logs";
+    }
+
+    public static final class Public {
+        public static final String BASE = API_V1 + "/public";
+        public static final String PRODUCTS = BASE + "/products";
+        public static final String PRODUCT_BY_SLUG = "/{slug}";
+        public static final String PRODUCT_PAGE = "/{productSlug}/pages/{pageSlug}";
         public static final String PAGES = BASE + "/pages";
     }
 
