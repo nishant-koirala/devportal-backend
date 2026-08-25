@@ -22,51 +22,51 @@ import org.springframework.data.mongodb.core.convert.DbRefResolver;
 @EnableMongoAuditing
 public class MongoConfig {
 
-    @Value("${spring.data.mongodb.uri}")
-    private String mongoUri;
+        @Value("${spring.data.mongodb.uri}")
+        private String mongoUri;
 
-    @Value("${spring.data.mongodb.database:fonepay-dev-portal}")
-    private String databaseName;
+        @Value("${spring.data.mongodb.database}")
+        private String databaseName;
 
-    @Bean
-    public MongoClient mongoClient() {
-        ConnectionString connectionString = new ConnectionString(mongoUri);
+        @Bean
+        public MongoClient mongoClient() {
+                ConnectionString connectionString = new ConnectionString(mongoUri);
 
-        MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
-                .applyConnectionString(connectionString)
-                .build();
+                MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
+                                .applyConnectionString(connectionString)
+                                .build();
 
-        return MongoClients.create(mongoClientSettings);
-    }
+                return MongoClients.create(mongoClientSettings);
+        }
 
-    @Bean
-    public MongoDatabaseFactory mongoDatabaseFactory(MongoClient mongoClient) {
-        return new SimpleMongoClientDatabaseFactory(
-                mongoClient,
-                databaseName);
-    }
+        @Bean
+        public MongoDatabaseFactory mongoDatabaseFactory(MongoClient mongoClient) {
+                return new SimpleMongoClientDatabaseFactory(
+                                mongoClient,
+                                databaseName);
+        }
 
-    @Bean
-    public MongoTemplate mongoTemplate(
-            MongoDatabaseFactory mongoDatabaseFactory,
-            MongoMappingContext mongoMappingContext,
-            MongoCustomConversions mongoCustomConversions) {
-        DbRefResolver dbRefResolver = new org.springframework.data.mongodb.core.convert.DefaultDbRefResolver(
-                mongoDatabaseFactory);
+        @Bean
+        public MongoTemplate mongoTemplate(
+                        MongoDatabaseFactory mongoDatabaseFactory,
+                        MongoMappingContext mongoMappingContext,
+                        MongoCustomConversions mongoCustomConversions) {
+                DbRefResolver dbRefResolver = new org.springframework.data.mongodb.core.convert.DefaultDbRefResolver(
+                                mongoDatabaseFactory);
 
-        MappingMongoConverter converter = new MappingMongoConverter(
-                dbRefResolver,
-                mongoMappingContext);
+                MappingMongoConverter converter = new MappingMongoConverter(
+                                dbRefResolver,
+                                mongoMappingContext);
 
-        converter.setCustomConversions(mongoCustomConversions);
+                converter.setCustomConversions(mongoCustomConversions);
 
-        // Disable "_class"
-        converter.setTypeMapper(new DefaultMongoTypeMapper(null));
+                // Disable "_class"
+                converter.setTypeMapper(new DefaultMongoTypeMapper(null));
 
-        converter.afterPropertiesSet();
+                converter.afterPropertiesSet();
 
-        return new MongoTemplate(
-                mongoDatabaseFactory,
-                converter);
-    }
+                return new MongoTemplate(
+                                mongoDatabaseFactory,
+                                converter);
+        }
 }
