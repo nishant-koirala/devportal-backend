@@ -10,21 +10,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.common.constant.enums.AuthStatus;
-import com.fonepay.devportal.common.constant.enums.PendingAuthStatus;
+import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.ForbiddenException;
 import com.fonepay.devportal.common.exception.InvalidOtpException;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
-import com.fonepay.devportal.modules.auth.document.PendingAuth;
+import com.fonepay.devportal.modules.auth.document.UserToken;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
-import com.fonepay.devportal.modules.auth.repository.PendingAuthRepository;
+import com.fonepay.devportal.modules.auth.repository.UserTokenRepository;
 import com.fonepay.devportal.modules.auth.service.AdminAuthService;
 import com.fonepay.devportal.modules.auth.service.OtpService;
-import com.fonepay.devportal.modules.auth.service.PendingAuthService;
+import com.fonepay.devportal.modules.auth.service.UserTokenService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.document.UserSession;
@@ -48,8 +48,8 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     private final UserRepository userRepository;
     private final UserRoleService userRoleService;
     private final UserSessionService userSessionService;
-    private final PendingAuthService pendingAuthService;
-    private final PendingAuthRepository pendingAuthRepository;
+    private final UserTokenService userTokenService;
+    private final UserTokenRepository userTokenRepository;
     private final OtpService otpService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -69,10 +69,11 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         User user = validateCredentials(request);
 
         List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
-        boolean isAdmin = roleNames.stream().anyMatch(ROLE_ADMIN::equalsIgnoreCase);
+        boolean isAdmin = roleNames.stream()
+                .anyMatch(r -> r.equalsIgnoreCase(ROLE_ADMIN));
         if (!isAdmin) {
             log.warn("User {} attempted admin login without ADMIN role", user.getUserId());
-            throw new ForbiddenException("Access denied: User does not have ADMIN privileges");
+            throw new ForbiddenException("Access denied: User is not an administrator");
         }
 
         return initiateAdminOtpFlow(user);
@@ -96,15 +97,15 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     }
 
     @Override
-    public OtpResponse setupOtp(String pendingAuthId) {
-        PendingAuth pendingAuth = pendingAuthService.findById(pendingAuthId)
-                .orElseThrow(() -> new UnauthorizedException("Invalid or expired pending authentication"));
+    public OtpResponse setupOtp(String tokenId) {
+        UserToken token = userTokenRepository.findByIdAndTokenType(tokenId, TokenType.LOGIN_OTP)
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired login session"));
 
-        if (pendingAuth.getStatus() != PendingAuthStatus.PENDING) {
-            throw new UnauthorizedException("Invalid or expired pending authentication");
+        if (token.getUsedAt() != null) {
+            throw new UnauthorizedException("Invalid or expired login session");
         }
 
-        User user = userRepository.findById(pendingAuth.getUserId())
+        User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
 
         List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
@@ -116,38 +117,36 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         }
 
         Instant now = clock.instant();
-        if (pendingAuth.getExpiresAt() != null && pendingAuth.getExpiresAt().isBefore(now)) {
-            pendingAuth.setStatus(PendingAuthStatus.EXPIRED);
-            pendingAuthService.deletePendingAuth(pendingAuth);
+        if (token.getExpiresAt() != null && token.getExpiresAt().isBefore(now)) {
+            userTokenService.deleteToken(token);
             throw new InvalidOtpException("OTP session expired. Please log in again.");
         }
 
         String otpCode = otpService.generateOtpCode();
-        String otpHash = otpService.hashOtp(otpCode);
+        String otpHash = userTokenService.hashToken(otpCode);
 
-        pendingAuth.setOtpHash(otpHash);
-        pendingAuth.setAttempts(0);
-        pendingAuth.setExpiresAt(now.plusSeconds(otpExpirationMinutes * 60L));
-        pendingAuth.setStatus(PendingAuthStatus.PENDING);
-        pendingAuth.setVerifiedAt(null);
-        pendingAuthRepository.save(pendingAuth);
+        token.setTokenHash(otpHash);
+        token.setAttempts(0);
+        token.setExpiresAt(now.plusSeconds(otpExpirationMinutes * 60L));
+        token.setUsedAt(null);
+        userTokenRepository.save(token);
 
         emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
-        log.info("Admin/Editor OTP resent for pending auth: {}", pendingAuthId);
+        log.info("Admin/Editor OTP resent for login token: {}", tokenId);
 
         return authMapper.toOtpResponse(
                 "OTP sent to your email",
-                (int) java.time.Duration.between(now, pendingAuth.getExpiresAt()).getSeconds());
+                (int) java.time.Duration.between(now, token.getExpiresAt()).getSeconds());
     }
 
     @Override
-    public AuthResponse verifyAdminOtp(String pendingAuthId, OtpVerifyRequest request) {
-        return completeOtpVerification(pendingAuthId, request, Set.of(ROLE_ADMIN));
+    public AuthResponse verifyAdminOtp(String tokenId, OtpVerifyRequest request) {
+        return completeOtpVerification(tokenId, request, Set.of(ROLE_ADMIN));
     }
 
     @Override
-    public AuthResponse verifyEditorOtp(String pendingAuthId, OtpVerifyRequest request) {
-        return completeOtpVerification(pendingAuthId, request, ROLES_EDITOR);
+    public AuthResponse verifyEditorOtp(String tokenId, OtpVerifyRequest request) {
+        return completeOtpVerification(tokenId, request, ROLES_EDITOR);
     }
 
     private User validateCredentials(LoginRequest request) {
@@ -171,24 +170,24 @@ public class AdminAuthServiceImpl implements AdminAuthService {
 
     private AuthResponse initiateAdminOtpFlow(User user) {
         String otpCode = otpService.generateOtpCode();
-        String otpHash = otpService.hashOtp(otpCode);
+        String otpHash = userTokenService.hashToken(otpCode);
 
-        PendingAuth pendingAuth = pendingAuthService.createPendingAuth(user.getUserId(), otpHash, otpExpirationMinutes);
+        UserToken token = userTokenService.createLoginOtpToken(user.getUserId(), otpHash, otpExpirationMinutes);
         emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
 
-        log.info("Initiated Admin/Editor OTP for user: {} with pendingAuth: {}", user.getUserId(), pendingAuth.getId());
-        return authMapper.toAuthResponse(user, pendingAuth.getId(), AuthStatus.OTP_REQUIRED);
+        log.info("Initiated Admin/Editor OTP for user: {} with login token: {}", user.getUserId(), token.getId());
+        return authMapper.toAuthResponse(user, token.getId(), AuthStatus.OTP_REQUIRED);
     }
 
-    private AuthResponse completeOtpVerification(String pendingAuthId, OtpVerifyRequest request, Set<String> requiredRoles) {
-        PendingAuth pendingAuth = pendingAuthService.findById(pendingAuthId)
-                .orElseThrow(() -> new UnauthorizedException("Invalid or expired pending authentication"));
+    private AuthResponse completeOtpVerification(String tokenId, OtpVerifyRequest request, Set<String> requiredRoles) {
+        UserToken token = userTokenRepository.findByIdAndTokenType(tokenId, TokenType.LOGIN_OTP)
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired login session"));
 
-        if (pendingAuth.getStatus() != PendingAuthStatus.PENDING) {
-            throw new UnauthorizedException("Invalid or expired pending authentication");
+        if (token.getUsedAt() != null) {
+            throw new UnauthorizedException("Invalid or expired login session");
         }
 
-        User user = userRepository.findById(pendingAuth.getUserId())
+        User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
 
         List<String> roleNames = userRoleService.getRoleNamesByUserId(user.getUserId());
@@ -200,26 +199,29 @@ public class AdminAuthServiceImpl implements AdminAuthService {
             throw new ForbiddenException("Access denied: User does not have required permissions");
         }
 
-        boolean verified = pendingAuthService.verifyOtp(pendingAuth, request.getCode(), MAX_OTP_ATTEMPTS);
+        Instant now = clock.instant();
+        if (token.getExpiresAt() != null && token.getExpiresAt().isBefore(now)) {
+            userTokenService.deleteToken(token);
+            throw new InvalidOtpException("OTP has expired. Please log in again.");
+        }
+
+        boolean verified = userTokenService.verifyLoginOtp(token, request.getCode(), MAX_OTP_ATTEMPTS);
 
         if (!verified) {
-            if (pendingAuth.getStatus() == PendingAuthStatus.EXPIRED) {
-                pendingAuthService.deletePendingAuth(pendingAuth);
-                throw new InvalidOtpException("OTP has expired. Please log in again.");
-            } else if (pendingAuth.getStatus() == PendingAuthStatus.FAILED) {
-                pendingAuthService.deletePendingAuth(pendingAuth);
+            if (token.getAttempts() >= MAX_OTP_ATTEMPTS) {
+                userTokenService.deleteToken(token);
                 throw new InvalidOtpException("Max OTP attempts exceeded. Please log in again.");
             } else {
-                int remainingAttempts = MAX_OTP_ATTEMPTS - pendingAuth.getAttempts();
+                int remainingAttempts = MAX_OTP_ATTEMPTS - token.getAttempts();
                 throw new InvalidOtpException("Invalid OTP code. " + remainingAttempts + " attempts remaining.");
             }
         }
 
-        pendingAuthService.deletePendingAuth(pendingAuth);
+        userTokenService.deleteToken(token);
         log.info("Admin/Editor OTP verification successful for user: {}", user.getUserId());
 
         UserSession session = userSessionService.createSession(user.getUserId(), null, null, jwtExpirationMs);
-        String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
-        return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
+        String jwt = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
+        return authMapper.toAuthResponse(user, jwt, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 }

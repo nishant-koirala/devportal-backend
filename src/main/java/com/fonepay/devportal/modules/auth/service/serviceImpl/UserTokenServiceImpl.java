@@ -51,6 +51,67 @@ public class UserTokenServiceImpl implements UserTokenService {
     }
 
     @Override
+    public UserToken createLoginOtpToken(String userId, String otpHash, int expirationMinutes) {
+        // Clean up any existing login OTP tokens for this user
+        tokenRepository.deleteByUserIdAndTokenType(userId, TokenType.LOGIN_OTP);
+
+        Instant now = Instant.now(clock);
+        UserToken token = UserToken.builder()
+                .id(IdGenerator.nextUlid())
+                .userId(userId)
+                .tokenHash(otpHash)
+                .tokenType(TokenType.LOGIN_OTP)
+                .createdAt(now)
+                .expiresAt(now.plus(expirationMinutes, ChronoUnit.MINUTES))
+                .attempts(0)
+                .build();
+
+        UserToken saved = tokenRepository.save(token);
+        log.info("Created LOGIN_OTP token {} for userId: {} (expires at: {})", saved.getId(), userId, saved.getExpiresAt());
+        return saved;
+    }
+
+    @Override
+    public boolean verifyLoginOtp(UserToken token, String providedCode, int maxAttempts) {
+        if (token.getUsedAt() != null) {
+            log.warn("Login OTP token already used: {}", token.getId());
+            return false;
+        }
+
+        Instant now = Instant.now(clock);
+        if (token.getExpiresAt() != null && token.getExpiresAt().isBefore(now)) {
+            log.warn("Login OTP token expired: {}", token.getId());
+            return false;
+        }
+
+        if (token.getAttempts() >= maxAttempts) {
+            log.warn("Max OTP attempts exceeded for token: {}", token.getId());
+            return false;
+        }
+
+        token.setAttempts(token.getAttempts() + 1);
+
+        String providedHash = hashToken(providedCode);
+        if (token.getTokenHash().equals(providedHash)) {
+            token.setUsedAt(now);
+            tokenRepository.save(token);
+            log.info("Login OTP verified successfully for token: {}", token.getId());
+            return true;
+        }
+
+        tokenRepository.save(token);
+        return false;
+    }
+
+    @Override
+    public void deleteToken(UserToken token) {
+        if (token != null) {
+            tokenRepository.delete(token);
+        }
+    }
+
+
+    @Override
     public void checkRateLimit(String userId, TokenType tokenType, long minSecondsInterval) {
         Optional<UserToken> existingTokenOpt = tokenRepository
                 .findByUserIdAndTokenTypeAndUsedAtIsNull(userId, tokenType);

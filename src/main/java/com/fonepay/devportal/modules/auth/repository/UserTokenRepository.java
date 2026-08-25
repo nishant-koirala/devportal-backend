@@ -13,7 +13,14 @@ public interface UserTokenRepository extends MongoRepository<UserToken, String> 
     
     Optional<UserToken> findByTokenHash(String tokenHash);
 
+    Optional<UserToken> findByIdAndTokenType(String id, TokenType tokenType);
+
+    Optional<UserToken> findByUserIdAndTokenType(String userId, TokenType tokenType);
+
     Optional<UserToken> findByUserIdAndTokenTypeAndUsedAtIsNull(String userId, TokenType tokenType);
 
     void deleteByUserId(String userId);
+
+    void deleteByUserIdAndTokenType(String userId, TokenType tokenType);
 }
+

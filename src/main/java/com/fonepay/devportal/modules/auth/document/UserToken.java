@@ -37,4 +37,8 @@ public class UserToken {
     private Instant usedAt;
 
     private Instant createdAt;
+
+    @Builder.Default
+    private int attempts = 0;
 }
+

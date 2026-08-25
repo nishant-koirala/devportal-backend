@@ -13,14 +13,14 @@ import com.fonepay.devportal.common.constant.enums.AuthStatus;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
-import com.fonepay.devportal.modules.auth.document.PendingAuth;
+import com.fonepay.devportal.modules.auth.document.UserToken;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.policy.MfaPolicy;
 import com.fonepay.devportal.modules.auth.service.LoginService;
 import com.fonepay.devportal.modules.auth.service.OtpService;
-import com.fonepay.devportal.modules.auth.service.PendingAuthService;
+import com.fonepay.devportal.modules.auth.service.UserTokenService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.document.UserSession;
@@ -42,7 +42,7 @@ public class LoginServiceImpl implements LoginService {
     private final UserSessionService userSessionService;
     private final MfaPolicy mfaPolicy;
     private final OtpService otpService;
-    private final PendingAuthService pendingAuthService;
+    private final UserTokenService userTokenService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -58,13 +58,13 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
-        log.info("Processing login request for email: {}", request.getEmail());
+        log.info("Processing login request for: {}", request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            log.warn("Password mismatch for email: {}", request.getEmail());
+            log.warn("Password mismatch for: {}", request.getEmail());
             activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, false);
             throw new UnauthorizedException("Invalid email or password");
         }
@@ -91,16 +91,16 @@ public class LoginServiceImpl implements LoginService {
         if (requiresMfa) {
             // Generate OTP code and hash
             String otpCode = otpService.generateOtpCode();
-            String otpHash = otpService.hashOtp(otpCode);
+            String otpHash = userTokenService.hashToken(otpCode);
 
-            // Create PendingAuth record with OTP hash (gates session creation)
-            PendingAuth pendingAuth = pendingAuthService.createPendingAuth(user.getUserId(), otpHash, otpExpirationMinutes);
+            // Create UserToken record with LOGIN_OTP type
+            UserToken token = userTokenService.createLoginOtpToken(user.getUserId(), otpHash, otpExpirationMinutes);
 
             // Send OTP email
             emailService.sendOtpEmail(user.getEmail(), otpCode, user.getFullName());
 
-            // Return pendingAuthId with OTP_REQUIRED status
-            return authMapper.toAuthResponse(user, pendingAuth.getId(), AuthStatus.OTP_REQUIRED);
+            // Return tokenId with OTP_REQUIRED status
+            return authMapper.toAuthResponse(user, token.getId(), AuthStatus.OTP_REQUIRED);
         }
 
         // Non-MFA: create session and issue JWT immediately
@@ -118,23 +118,17 @@ public class LoginServiceImpl implements LoginService {
 
         String token = authHeader.substring(7);
         String sessionId = jwtUtil.extractSessionId(token);
-        String userId = jwtUtil.extractUserId(token);
 
         if (sessionId != null) {
+            String userId = jwtUtil.extractUserId(token);
             userSessionService.revokeSessionBySessionId(sessionId);
-        }
-        if (userId != null) {
             activityRecordingService.record(userId, ActivityType.LOGOUT);
+            log.info("User logged out, session terminated: {}", sessionId);
         }
     }
 
     @Override
     public String extractUserIdFromToken(String token) {
-        try {
-            return jwtUtil.extractUserId(token);
-        } catch (Exception e) {
-            log.error("Failed to extract user ID from token", e);
-            return null;
-        }
+        return jwtUtil.extractUserId(token);
     }
 }
