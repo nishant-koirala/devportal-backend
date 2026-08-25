@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.DuplicateResourceException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
+import com.fonepay.devportal.common.util.IdGenerator;
 import com.fonepay.devportal.modules.cms.document.Page;
 import com.fonepay.devportal.modules.cms.document.Product;
 import com.fonepay.devportal.modules.cms.dto.request.CreatePageRequest;
@@ -39,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PageServiceImpl implements PageService {
 
-    private static final int MAX_TREE_DEPTH = 10;
+    private static final int MAX_TREE_DEPTH = 3;
 
     private final PageRepository pageRepository;
     private final MongoTemplate mongoTemplate;
@@ -69,6 +70,7 @@ public class PageServiceImpl implements PageService {
 
         Instant now = clock.instant();
         Page page = new Page();
+        page.setId(IdGenerator.nextUlid());
         page.setProductId(productId);
         page.setParentId(parentId);
         page.setPageOrder(nextPageOrder(productId, parentId));
