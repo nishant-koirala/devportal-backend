@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.cms.document;
+package com.fonepay.devportal.modules.cms.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductResource {
+public class ProductResourceResponseDto {
     private String resourceId;
     private String name;
     private String resourceType;
