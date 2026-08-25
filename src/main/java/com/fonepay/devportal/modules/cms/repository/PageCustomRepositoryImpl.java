@@ -9,9 +9,11 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
+import com.fonepay.devportal.modules.cms.document.BlockData;
 import com.fonepay.devportal.modules.cms.document.Page;
 import com.fonepay.devportal.modules.cms.dto.request.PageHierarchyUpdateDto;
 import com.fonepay.devportal.modules.cms.enums.PageStatus;
+import com.mongodb.client.result.UpdateResult;
 
 public class PageCustomRepositoryImpl implements PageCustomRepository {
 
@@ -50,6 +52,21 @@ public class PageCustomRepositoryImpl implements PageCustomRepository {
                 .set("status", status)
                 .set("updated_at", updatedAt);
         mongoTemplate.updateMulti(query, update, Page.class);
+    }
+
+    @Override
+    public boolean updateDraftBlock(String pageId, String blockId, BlockData newData, long currentVersion) {
+        Query query = new Query(Criteria.where("_id").is(pageId));
+
+        Update update = new Update()
+                .set("draftBlocks.$[block].data", newData)
+                .inc("draftBlocks.$[block].blockVersion", 1L);
+
+        update.filterArray(Criteria.where("block.id").is(blockId).and("block.blockVersion").is(currentVersion));
+
+        UpdateResult result = mongoTemplate.updateFirst(query, update, Page.class);
+
+        return result.getModifiedCount() > 0;
     }
 
     private static String normalizeParentId(String parentId) {

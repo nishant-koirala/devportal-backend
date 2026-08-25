@@ -60,8 +60,9 @@ public class MongoConfig {
 
         converter.setCustomConversions(mongoCustomConversions);
 
+        // TEMPORARILY COMMENTED OUT FOR DEV 3 TESTING (Polymorphism)
         // Disable "_class"
-        converter.setTypeMapper(new DefaultMongoTypeMapper(null));
+        // converter.setTypeMapper(new DefaultMongoTypeMapper(null));
 
         converter.afterPropertiesSet();
 
