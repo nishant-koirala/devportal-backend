@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@org.springframework.data.annotation.TypeAlias("PARAGRAPH") // TEMPORARY FOR DEV 3 TESTING
 public class ParagraphBlockData implements BlockData {
     private String text;
 }

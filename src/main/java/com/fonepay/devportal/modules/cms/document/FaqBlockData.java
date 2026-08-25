@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@org.springframework.data.annotation.TypeAlias("FAQ") // TEMPORARY FOR DEV 3 TESTING
 public class FaqBlockData implements BlockData {
     private String question;
     private String answer;
