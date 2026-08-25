@@ -1,4 +1,4 @@
-package com.fonepay.devportal.common.constant.apis;
+package com.fonepay.devportal.common.constant.apis.ApiRoutes;
 
 public final class ApiRoutes {
 
@@ -53,10 +53,13 @@ public final class ApiRoutes {
 
     public static final class Cms {
         public static final String BASE = API_V1 + "/cms";
+        public static final String PRODUCT_PAGES = "/products/{productId}/pages";
+        public static final String PRODUCT_PAGE_TREE = "/products/{productId}/pages/tree";
+        public static final String PRODUCT_PAGES_REORDER = "/products/{productId}/pages/reorder";
+        public static final String PAGE_BY_ID = "/pages/{pageId}";
     }
 
     public static final class Department {
         public static final String BASE = API_V1 + "/departments";
     }
 }
-
