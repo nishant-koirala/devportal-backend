@@ -2,6 +2,8 @@ package com.fonepay.devportal.modules.cms.document;
 
 import com.fonepay.devportal.modules.cms.enums.PageStatus;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -18,6 +20,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "pages")
+@CompoundIndexes({
+        @CompoundIndex(name = "product_slug_idx", def = "{'product_id': 1, 'slug': 1}", unique = true),
+        @CompoundIndex(name = "product_parent_order_idx", def = "{'product_id': 1, 'parent_id': 1, 'page_order': 1}")
+})
 public class Page {
 
     @Id

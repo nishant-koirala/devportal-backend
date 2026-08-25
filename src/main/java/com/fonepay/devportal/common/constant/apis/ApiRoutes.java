@@ -33,10 +33,15 @@ public final class ApiRoutes {
         public static final String DEVELOPER_STATUS = "/{userId}/status";
         public static final String DEVELOPER_ACTIVITY = "/{userId}/activity";
         public static final String DEVELOPER_LOGIN_HISTORY = "/{userId}/login-history";
+        public static final String PAGES = BASE + "/pages";
     }
 
     public static final class Cms {
         public static final String BASE = API_V1 + "/cms";
+        public static final String PRODUCT_PAGES = "/products/{productId}/pages";
+        public static final String PRODUCT_PAGE_TREE = "/products/{productId}/pages/tree";
+        public static final String PRODUCT_PAGES_REORDER = "/products/{productId}/pages/reorder";
+        public static final String PAGE_BY_ID = "/pages/{pageId}";
     }
 
     public static final class Department {
