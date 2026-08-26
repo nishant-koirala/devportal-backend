@@ -37,6 +37,9 @@ public final class ApiRoutes {
         public static final String PRODUCTS = BASE + "/products";
         public static final String PRODUCT_BY_ID = "/{id}";
         public static final String PRODUCT_STATUS = "/{id}/status";
+        public static final String PRODUCT_SUBMIT_REVIEW = "/{id}/submit-review";
+        public static final String PRODUCT_APPROVE = "/{id}/approve";
+        public static final String PRODUCT_REJECT = "/{id}/reject";
         public static final String PRODUCT_RESOURCES = "/{id}/resources";
         public static final String PRODUCT_RESOURCE_BY_ID = "/{id}/resources/{resourceId}";
 

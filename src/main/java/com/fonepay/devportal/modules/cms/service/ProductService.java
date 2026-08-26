@@ -30,6 +30,15 @@ public interface ProductService {
     ProductDetailResponseDto updateProductStatus(String id, UpdateProductStatusRequest request, String adminId, String sourceIp);
 
     @RequireAdmin
+    ProductDetailResponseDto submitForReview(String id, String userId, String sourceIp);
+
+    @RequireAdmin
+    ProductDetailResponseDto approveProduct(String id, String adminId, String sourceIp);
+
+    @RequireAdmin
+    ProductDetailResponseDto rejectProduct(String id, com.fonepay.devportal.modules.cms.dto.request.RejectProductRequest request, String adminId, String sourceIp);
+
+    @RequireAdmin
     void deleteProduct(String id, String adminId, String sourceIp);
 
     PageResponse<ProductResponseDto> getProducts(ProductSearchCriteriaDto criteria);

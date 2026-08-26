@@ -26,6 +26,7 @@ import com.fonepay.devportal.common.util.HttpRequestUtil;
 import com.fonepay.devportal.modules.cms.dto.request.CreateProductRequest;
 import com.fonepay.devportal.modules.cms.dto.request.CreateProductResourceRequest;
 import com.fonepay.devportal.modules.cms.dto.request.ProductSearchCriteriaDto;
+import com.fonepay.devportal.modules.cms.dto.request.RejectProductRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdateProductRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdateProductResourceRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdateProductStatusRequest;
@@ -147,6 +148,73 @@ public class AdminProductController {
                         .status(HttpStatus.OK.value())
                         .success(true)
                         .message("Product status updated successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
+    }
+
+    @PostMapping(ApiRoutes.Admin.PRODUCT_SUBMIT_REVIEW)
+    public ResponseEntity<ApiResponse<ProductDetailResponseDto>> submitForReview(
+            @PathVariable String id,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        String userId = extractAdminId(authentication);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("User [{}] submitting product ID: {} for review", userId, id);
+
+        ProductDetailResponseDto response = productService.submitForReview(id, userId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<ProductDetailResponseDto>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Product submitted for review successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
+    }
+
+    @PostMapping(ApiRoutes.Admin.PRODUCT_APPROVE)
+    public ResponseEntity<ApiResponse<ProductDetailResponseDto>> approveProduct(
+            @PathVariable String id,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        String adminId = extractAdminId(authentication);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("Admin [{}] approving product ID: {}", adminId, id);
+
+        ProductDetailResponseDto response = productService.approveProduct(id, adminId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<ProductDetailResponseDto>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Product approved and published successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
+    }
+
+    @PostMapping(ApiRoutes.Admin.PRODUCT_REJECT)
+    public ResponseEntity<ApiResponse<ProductDetailResponseDto>> rejectProduct(
+            @PathVariable String id,
+            @Valid @RequestBody RejectProductRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        String adminId = extractAdminId(authentication);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("Admin [{}] rejecting product ID: {} with reason: {}", adminId, id, request.getReason());
+
+        ProductDetailResponseDto response = productService.rejectProduct(id, request, adminId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<ProductDetailResponseDto>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Product rejected and returned to draft with feedback")
                         .data(response)
                         .timestamp(LocalDateTime.now(clock))
                         .build());

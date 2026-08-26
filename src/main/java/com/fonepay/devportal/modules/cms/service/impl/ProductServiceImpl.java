@@ -25,6 +25,7 @@ import com.fonepay.devportal.modules.cms.document.ProductResource;
 import com.fonepay.devportal.modules.cms.dto.request.CreateProductRequest;
 import com.fonepay.devportal.modules.cms.dto.request.CreateProductResourceRequest;
 import com.fonepay.devportal.modules.cms.dto.request.ProductSearchCriteriaDto;
+import com.fonepay.devportal.modules.cms.dto.request.RejectProductRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdateProductRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdateProductResourceRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdateProductStatusRequest;
@@ -184,6 +185,106 @@ public class ProductServiceImpl implements ProductService {
         log.info("Product status updated: id={}, oldStatus={}, newStatus={}, by admin={}", saved.getId(), oldStatus, saved.getStatus(), adminId);
 
         auditLogService.logAction(adminId, "UPDATE_PRODUCT_STATUS", saved.getId(), "PRODUCT", sourceIp);
+
+        return productMapper.toDetailResponseDto(saved);
+    }
+
+    @Override
+    public ProductDetailResponseDto submitForReview(String id, String userId, String sourceIp) {
+        if (id == null || id.isBlank()) {
+            throw new BadRequestException("Product ID or slug must not be blank");
+        }
+
+        Product product = findProductByIdOrSlug(id.trim());
+
+        if (product.getStatus() == ProductStatus.PUBLISHED) {
+            throw new BadRequestException("Cannot submit a product that is already PUBLISHED");
+        }
+        if (product.getStatus() == ProductStatus.DEPRECATED) {
+            throw new BadRequestException("Cannot submit a DEPRECATED product for review");
+        }
+        if (product.getStatus() == ProductStatus.IN_REVIEW) {
+            throw new BadRequestException("Product is already IN_REVIEW");
+        }
+
+        // Validate basic product completeness before submitting
+        if (product.getName() == null || product.getName().isBlank()) {
+            throw new BadRequestException("Product must have a valid name before submitting for review");
+        }
+        if (product.getSlug() == null || product.getSlug().isBlank()) {
+            throw new BadRequestException("Product must have a valid slug before submitting for review");
+        }
+
+        Instant now = clock.instant();
+        product.setStatus(ProductStatus.IN_REVIEW);
+        product.setSubmittedBy(userId);
+        product.setSubmittedAt(now);
+        product.setReviewNotes(null); // Clear previous review notes on resubmission
+        product.setUpdatedAt(now);
+
+        Product saved = saveWithOptimisticLockHandling(product);
+        log.info("Product submitted for review: id={}, slug={}, submittedBy={}", saved.getId(), saved.getSlug(), userId);
+
+        auditLogService.logAction(userId, "PRODUCT_SUBMIT_REVIEW", saved.getId(), "PRODUCT", sourceIp);
+
+        return productMapper.toDetailResponseDto(saved);
+    }
+
+    @Override
+    public ProductDetailResponseDto approveProduct(String id, String adminId, String sourceIp) {
+        if (id == null || id.isBlank()) {
+            throw new BadRequestException("Product ID or slug must not be blank");
+        }
+
+        Product product = findProductByIdOrSlug(id.trim());
+
+        if (product.getStatus() == ProductStatus.PUBLISHED) {
+            throw new BadRequestException("Product is already PUBLISHED");
+        }
+        if (product.getStatus() != ProductStatus.IN_REVIEW) {
+            throw new BadRequestException("Only products with IN_REVIEW status can be approved. Current status: " + product.getStatus());
+        }
+
+        Instant now = clock.instant();
+        product.setStatus(ProductStatus.PUBLISHED);
+        product.setReviewedBy(adminId);
+        product.setReviewedAt(now);
+        product.setUpdatedAt(now);
+
+        Product saved = saveWithOptimisticLockHandling(product);
+        log.info("Product approved & published: id={}, slug={}, approvedBy={}", saved.getId(), saved.getSlug(), adminId);
+
+        auditLogService.logAction(adminId, "PRODUCT_APPROVE_PUBLISH", saved.getId(), "PRODUCT", sourceIp);
+
+        return productMapper.toDetailResponseDto(saved);
+    }
+
+    @Override
+    public ProductDetailResponseDto rejectProduct(String id, RejectProductRequest request, String adminId, String sourceIp) {
+        if (id == null || id.isBlank()) {
+            throw new BadRequestException("Product ID or slug must not be blank");
+        }
+        if (request == null || request.getReason() == null || request.getReason().isBlank()) {
+            throw new BadRequestException("Rejection reason / review notes are required");
+        }
+
+        Product product = findProductByIdOrSlug(id.trim());
+
+        if (product.getStatus() != ProductStatus.IN_REVIEW) {
+            throw new BadRequestException("Only products with IN_REVIEW status can be rejected. Current status: " + product.getStatus());
+        }
+
+        Instant now = clock.instant();
+        product.setStatus(ProductStatus.DRAFT);
+        product.setReviewNotes(request.getReason().trim());
+        product.setReviewedBy(adminId);
+        product.setReviewedAt(now);
+        product.setUpdatedAt(now);
+
+        Product saved = saveWithOptimisticLockHandling(product);
+        log.info("Product rejected: id={}, slug={}, rejectedBy={}, reason={}", saved.getId(), saved.getSlug(), adminId, request.getReason());
+
+        auditLogService.logAction(adminId, "PRODUCT_REJECT", saved.getId(), "PRODUCT", sourceIp);
 
         return productMapper.toDetailResponseDto(saved);
     }
@@ -409,5 +510,14 @@ public class ProductServiceImpl implements ProductService {
         if (trimmed.length() < 2 || trimmed.length() > 100 || !SLUG_PATTERN.matcher(trimmed).matches()) {
             throw new BadRequestException("Invalid slug format. Slug must be 2-100 alphanumeric characters or hyphens (e.g. 'fpi-gateway')");
         }
+    }
+
+    private Product findProductByIdOrSlug(String idOrSlug) {
+        if (idOrSlug == null || idOrSlug.isBlank()) {
+            throw new BadRequestException("Product ID or slug must not be blank");
+        }
+        return productRepository.findById(idOrSlug.trim())
+                .or(() -> productRepository.findBySlug(idOrSlug.trim().toLowerCase()))
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID or slug: " + idOrSlug));
     }
 }
