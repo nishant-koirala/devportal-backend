@@ -29,8 +29,8 @@ public class PublicProductServiceImpl implements PublicProductService {
 
     @Override
     public List<PublicProductResponseDto> getActiveProducts() {
-        // Query-level filtering: Fetch only ACTIVE products sorted by displayOrder
-        List<Product> activeProducts = productRepository.findByStatusOrderByDisplayOrderAsc(ProductStatus.ACTIVE);
+        // Query-level filtering: Fetch only PUBLISHED products sorted by displayOrder
+        List<Product> activeProducts = productRepository.findByStatusOrderByDisplayOrderAsc(ProductStatus.PUBLISHED);
         return publicContentMapper.toPublicProductResponseDtoList(activeProducts);
     }
 
@@ -38,9 +38,9 @@ public class PublicProductServiceImpl implements PublicProductService {
     public PublicProductResponseDto getActiveProductBySlug(String slug) {
         validateSlug(slug);
 
-        // Query-level filtering: Fetch only ACTIVE product matching slug
-        Product product = productRepository.findBySlugAndStatus(slug.trim().toLowerCase(), ProductStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Active product not found with slug: " + slug));
+        // Query-level filtering: Fetch only PUBLISHED product matching slug
+        Product product = productRepository.findBySlugAndStatus(slug.trim().toLowerCase(), ProductStatus.PUBLISHED)
+                .orElseThrow(() -> new ResourceNotFoundException("Published product not found with slug: " + slug));
 
         return publicContentMapper.toPublicProductResponseDto(product);
     }
