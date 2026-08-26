@@ -5,5 +5,10 @@ public enum BlockType {
     PARAGRAPH,
     CODE,
     ENDPOINT,
-    FAQ
+    FAQ,
+    TABLE,
+    IMAGE,
+    NOTE_WARNING,
+    PARAMETER_TABLE,
+    TEST_CREDENTIAL
 }
