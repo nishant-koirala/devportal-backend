@@ -1,7 +1,9 @@
 package com.fonepay.devportal.modules.cms.dto.response;
 
 import java.time.Instant;
+import java.util.List;
 
+import com.fonepay.devportal.modules.cms.document.Block;
 import com.fonepay.devportal.modules.cms.enums.PageStatus;
 
 import lombok.AllArgsConstructor;
@@ -26,4 +28,7 @@ public class PageMetaResponse {
     private Instant updatedAt;
     private String createdBy;
     private Instant lastPublishedAt;
+    
+    private List<Block> draftBlocks;
+    private List<Block> publishedBlocks;
 }
