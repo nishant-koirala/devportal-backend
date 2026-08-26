@@ -37,6 +37,7 @@ import com.fonepay.devportal.modules.cms.mapper.ProductMapper;
 import com.fonepay.devportal.modules.cms.repository.ProductRepository;
 import com.fonepay.devportal.modules.cms.service.AuditLogService;
 import com.fonepay.devportal.modules.cms.service.ProductService;
+import com.fonepay.devportal.modules.cms.service.PublishService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,7 @@ public class ProductServiceImpl implements ProductService {
     private final MongoTemplate mongoTemplate;
     private final ProductMapper productMapper;
     private final AuditLogService auditLogService;
+    private final PublishService publishService;
     private final Clock clock;
 
     @Override
@@ -253,6 +255,9 @@ public class ProductServiceImpl implements ProductService {
 
         Product saved = saveWithOptimisticLockHandling(product);
         log.info("Product approved & published: id={}, slug={}, approvedBy={}", saved.getId(), saved.getSlug(), adminId);
+
+        // Auto-publish all existing unarchived pages under this product and create their initial PageVersion (v1)
+        publishService.publishPagesForProduct(saved.getId(), adminId, sourceIp, "Auto-published upon product approval");
 
         auditLogService.logAction(adminId, "PRODUCT_APPROVE_PUBLISH", saved.getId(), "PRODUCT", sourceIp);
 
