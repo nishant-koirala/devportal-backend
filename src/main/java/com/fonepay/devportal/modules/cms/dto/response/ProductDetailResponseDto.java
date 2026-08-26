@@ -28,4 +28,9 @@ public class ProductDetailResponseDto {
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
+    private String reviewNotes;
+    private String submittedBy;
+    private Instant submittedAt;
+    private String reviewedBy;
+    private Instant reviewedAt;
 }

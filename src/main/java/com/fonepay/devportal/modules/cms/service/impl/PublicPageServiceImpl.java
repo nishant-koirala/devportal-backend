@@ -34,9 +34,9 @@ public class PublicPageServiceImpl implements PublicPageService {
         validateSlug(productSlug, "Product slug");
         validateSlug(pageSlug, "Page slug");
 
-        // Verify product is active
-        Product product = productRepository.findBySlugAndStatus(productSlug.trim().toLowerCase(), ProductStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Active product not found with slug: " + productSlug));
+        // Verify product is published
+        Product product = productRepository.findBySlugAndStatus(productSlug.trim().toLowerCase(), ProductStatus.PUBLISHED)
+                .orElseThrow(() -> new ResourceNotFoundException("Published product not found with slug: " + productSlug));
 
         // Query-level projection: Strictly exclude draft_blocks
         Page page = pageRepository.findPublishedByProductIdAndSlugExcludingDrafts(product.getId(), pageSlug.trim().toLowerCase())

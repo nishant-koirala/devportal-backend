@@ -68,5 +68,20 @@ public class Product {
 
     @Field("created_by")
     private String createdBy;
+
+    @Field("review_notes")
+    private String reviewNotes;
+
+    @Field("submitted_by")
+    private String submittedBy;
+
+    @Field("submitted_at")
+    private Instant submittedAt;
+
+    @Field("reviewed_by")
+    private String reviewedBy;
+
+    @Field("reviewed_at")
+    private Instant reviewedAt;
 }
 
