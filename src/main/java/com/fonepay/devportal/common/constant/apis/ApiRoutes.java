@@ -60,6 +60,9 @@ public final class ApiRoutes {
         public static final String PRODUCT_PAGE_TREE = "/products/{productId}/pages/tree";
         public static final String PRODUCT_PAGES_REORDER = "/products/{productId}/pages/reorder";
         public static final String PAGE_BY_ID = "/pages/{pageId}";
+        public static final String PAGE_SUBMIT_REVIEW = "/pages/{pageId}/submit-review";
+        public static final String PAGE_APPROVE = "/pages/{pageId}/approve";
+        public static final String PAGE_REJECT = "/pages/{pageId}/reject";
         public static final String PAGE_PUBLISH = "/pages/{pageId}/publish";
         public static final String PAGE_VERSIONS = "/pages/{pageId}/versions";
         public static final String PAGE_VERSION_BY_NUMBER = "/pages/{pageId}/versions/{versionNumber}";

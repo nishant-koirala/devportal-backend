@@ -12,11 +12,11 @@ import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory;
+import org.springframework.data.mongodb.core.convert.DbRefResolver;
 import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
-import org.springframework.data.mongodb.core.convert.DbRefResolver;
 
 @Configuration
 @EnableMongoAuditing
@@ -44,6 +44,11 @@ public class MongoConfig {
                 return new SimpleMongoClientDatabaseFactory(
                                 mongoClient,
                                 databaseName);
+        }
+
+        @Bean
+        public MongoCustomConversions mongoCustomConversions() {
+                return new MongoCustomConversions(BlockMongoConverters.all());
         }
 
         @Bean

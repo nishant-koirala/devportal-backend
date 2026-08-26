@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 
     private final Clock clock;
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final ObjectMapper objectMapper;
 
     @Override
     public void handle(

@@ -28,7 +28,12 @@ public class PageMetaResponse {
     private Instant updatedAt;
     private String createdBy;
     private Instant lastPublishedAt;
-    
+    private String reviewNotes;
+    private String submittedBy;
+    private Instant submittedAt;
+    private String reviewedBy;
+    private Instant reviewedAt;
+
     private List<Block> draftBlocks;
     private List<Block> publishedBlocks;
 }

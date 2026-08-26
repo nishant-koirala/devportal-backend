@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
 
     private final Clock clock;
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final ObjectMapper objectMapper;
 
     @Override
     public void commence(@NonNull HttpServletRequest request, HttpServletResponse response,
