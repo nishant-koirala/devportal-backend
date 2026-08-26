@@ -10,9 +10,12 @@ public interface PublishService {
 
     PageMetaResponse publishPage(String pageId, PublishPageRequest request, String adminId, String sourceIp);
 
+    List<PageMetaResponse> publishPagesForProduct(String productId, String adminId, String sourceIp, String commitMessage);
+
     List<PageVersionResponse> getPageVersions(String pageId);
 
     PageVersionResponse getPageVersion(String pageId, int versionNumber);
 
     PageMetaResponse revertToVersion(String pageId, int versionNumber, String adminId, String sourceIp);
 }
+

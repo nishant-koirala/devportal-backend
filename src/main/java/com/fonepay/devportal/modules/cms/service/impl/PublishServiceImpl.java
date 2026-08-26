@@ -95,6 +95,60 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
+    public List<PageMetaResponse> publishPagesForProduct(String productId, String adminId, String sourceIp,
+            String commitMessage) {
+        if (productId == null || productId.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        List<Page> pages = pageRepository.findByProductIdAndStatusNotOrderByPageOrderAsc(productId.trim(),
+                PageStatus.ARCHIVED);
+        if (pages.isEmpty()) {
+            log.info("No active pages found to publish for product ID: {}", productId);
+            return Collections.emptyList();
+        }
+
+        Instant now = Instant.now(clock);
+        List<PageMetaResponse> publishedPages = new ArrayList<>();
+
+        for (Page page : pages) {
+            List<Block> draftBlocks = page.getDraftBlocks() != null ? page.getDraftBlocks() : Collections.emptyList();
+            List<Block> snapshotBlocks = new ArrayList<>(draftBlocks);
+            page.setPublishedBlocks(snapshotBlocks);
+
+            int nextVersion = pageVersionRepository.findTopByPageIdOrderByVersionNumberDesc(page.getId())
+                    .map(v -> v.getVersionNumber() + 1)
+                    .orElse(1);
+
+            PageVersion pageVersion = PageVersion.builder()
+                    .id(IdGenerator.nextUlid())
+                    .pageId(page.getId())
+                    .versionNumber(nextVersion)
+                    .publishedBlocks(new ArrayList<>(snapshotBlocks))
+                    .publishedAt(now)
+                    .publishedBy(adminId)
+                    .commitMessage(commitMessage != null && !commitMessage.isBlank()
+                            ? commitMessage.trim()
+                            : "Auto-published upon product approval (version " + nextVersion + ")")
+                    .build();
+
+            pageVersionRepository.save(pageVersion);
+            log.info("Created page version {} for page {} during product approval", nextVersion, page.getId());
+
+            page.setStatus(PageStatus.PUBLISHED);
+            page.setLastPublishedAt(now);
+            page.setUpdatedAt(now);
+            Page savedPage = pageRepository.save(page);
+
+            auditLogService.logAction(adminId, "PAGE_PUBLISH", savedPage.getId(), "PAGE", sourceIp);
+            publishedPages.add(pageMapper.toMetaResponse(savedPage));
+        }
+
+        log.info("Auto-published {} page(s) for product ID: {}", publishedPages.size(), productId);
+        return publishedPages;
+    }
+
+    @Override
     public List<PageVersionResponse> getPageVersions(String pageId) {
         requirePageExists(pageId);
         List<PageVersion> versions = pageVersionRepository.findByPageIdOrderByVersionNumberDesc(pageId);
