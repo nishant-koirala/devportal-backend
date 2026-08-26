@@ -243,7 +243,8 @@ public class AdminPageController {
         log.info("Reverting page {} to version {} by admin {}", pageId, versionNumber, adminId);
 
         PageMetaResponse data = publishService.revertToVersion(pageId, versionNumber, adminId, sourceIp);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page reverted to version " + versionNumber + " successfully", data));
+        return ResponseEntity
+                .ok(success(HttpStatus.OK, "Page reverted to version " + versionNumber + " successfully", data));
     }
 
     private String currentUserId(User user) {

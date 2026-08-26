@@ -44,7 +44,7 @@ public class PublishServiceImpl implements PublishService {
     public PageMetaResponse publishPage(String pageId, PublishPageRequest request, String adminId, String sourceIp) {
         log.info("Publishing page {} by admin {}", pageId, adminId);
 
-        // 1. Retrieve the current Page
+        // Retrieve the current Page
         Page page = pageRepository.findById(pageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Page not found with ID: " + pageId));
 
@@ -56,19 +56,21 @@ public class PublishServiceImpl implements PublishService {
                     "Only pages with IN_REVIEW status can be published. Current status: " + page.getStatus());
         }
 
-        // 2. Copy the entire draftBlocks array into the publishedBlocks array
+        // Copy the entire draftBlocks array into the publishedBlocks array
         List<Block> draftBlocks = page.getDraftBlocks() != null ? page.getDraftBlocks() : Collections.emptyList();
         List<Block> snapshotBlocks = new ArrayList<>(draftBlocks);
         page.setPublishedBlocks(snapshotBlocks);
 
-        // 3. Query the PageVersionRepository to find the latest version number for this page. Increment it by 1.
+        // Query the PageVersionRepository to find the latest version number for this
+        // page. Increment it by 1.
         int nextVersion = pageVersionRepository.findTopByPageIdOrderByVersionNumberDesc(pageId)
                 .map(v -> v.getVersionNumber() + 1)
                 .orElse(1);
 
         Instant now = Instant.now(clock);
 
-        // 4. Create a new PageVersion document containing the copied block array, the new version number, and the admin's commit message. Save it.
+        // Create a new PageVersion document containing the copied block array, the new
+        // version number, and the admin's commit message. Save it.
         PageVersion pageVersion = PageVersion.builder()
                 .id(IdGenerator.nextUlid())
                 .pageId(page.getId())
@@ -76,23 +78,78 @@ public class PublishServiceImpl implements PublishService {
                 .publishedBlocks(new ArrayList<>(snapshotBlocks))
                 .publishedAt(now)
                 .publishedBy(adminId)
-                .commitMessage(request != null && request.getCommitMessage() != null ? request.getCommitMessage().trim() : "Published version " + nextVersion)
+                .commitMessage(request != null && request.getCommitMessage() != null ? request.getCommitMessage().trim()
+                        : "Published version " + nextVersion)
                 .build();
 
         pageVersionRepository.save(pageVersion);
         log.info("Created page version {} for page {}", nextVersion, pageId);
 
-        // 5. Update the Page document's status to PUBLISHED and set lastPublishedAt.
+        // Update the Page document's status to PUBLISHED and set lastPublishedAt.
         page.setStatus(PageStatus.PUBLISHED);
         page.setLastPublishedAt(now);
         page.setUpdatedAt(now);
         Page savedPage = pageRepository.save(page);
         log.info("Updated page {} status to PUBLISHED", pageId);
 
-        // 6. Record the publish event via AuditLogService
+        // Record the publish event via AuditLogService
         auditLogService.logAction(adminId, "PAGE_PUBLISH", savedPage.getId(), "PAGE", sourceIp);
 
         return pageMapper.toMetaResponse(savedPage);
+    }
+
+    @Override
+    public List<PageMetaResponse> publishPagesForProduct(String productId, String adminId, String sourceIp,
+            String commitMessage) {
+        if (productId == null || productId.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        List<Page> pages = pageRepository.findByProductIdAndStatusNotOrderByPageOrderAsc(productId.trim(),
+                PageStatus.ARCHIVED);
+        if (pages.isEmpty()) {
+            log.info("No active pages found to publish for product ID: {}", productId);
+            return Collections.emptyList();
+        }
+
+        Instant now = Instant.now(clock);
+        List<PageMetaResponse> publishedPages = new ArrayList<>();
+
+        for (Page page : pages) {
+            List<Block> draftBlocks = page.getDraftBlocks() != null ? page.getDraftBlocks() : Collections.emptyList();
+            List<Block> snapshotBlocks = new ArrayList<>(draftBlocks);
+            page.setPublishedBlocks(snapshotBlocks);
+
+            int nextVersion = pageVersionRepository.findTopByPageIdOrderByVersionNumberDesc(page.getId())
+                    .map(v -> v.getVersionNumber() + 1)
+                    .orElse(1);
+
+            PageVersion pageVersion = PageVersion.builder()
+                    .id(IdGenerator.nextUlid())
+                    .pageId(page.getId())
+                    .versionNumber(nextVersion)
+                    .publishedBlocks(new ArrayList<>(snapshotBlocks))
+                    .publishedAt(now)
+                    .publishedBy(adminId)
+                    .commitMessage(commitMessage != null && !commitMessage.isBlank()
+                            ? commitMessage.trim()
+                            : "Auto-published upon product approval (version " + nextVersion + ")")
+                    .build();
+
+            pageVersionRepository.save(pageVersion);
+            log.info("Created page version {} for page {} during product approval", nextVersion, page.getId());
+
+            page.setStatus(PageStatus.PUBLISHED);
+            page.setLastPublishedAt(now);
+            page.setUpdatedAt(now);
+            Page savedPage = pageRepository.save(page);
+
+            auditLogService.logAction(adminId, "PAGE_PUBLISH", savedPage.getId(), "PAGE", sourceIp);
+            publishedPages.add(pageMapper.toMetaResponse(savedPage));
+        }
+
+        log.info("Auto-published {} page(s) for product ID: {}", publishedPages.size(), productId);
+        return publishedPages;
     }
 
     @Override
