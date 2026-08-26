@@ -51,6 +51,10 @@ public class PublishServiceImpl implements PublishService {
         if (page.getStatus() == PageStatus.ARCHIVED) {
             throw new BadRequestException("Cannot publish an archived page");
         }
+        if (page.getStatus() != PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Only pages with IN_REVIEW status can be published. Current status: " + page.getStatus());
+        }
 
         // Copy the entire draftBlocks array into the publishedBlocks array
         List<Block> draftBlocks = page.getDraftBlocks() != null ? page.getDraftBlocks() : Collections.emptyList();
