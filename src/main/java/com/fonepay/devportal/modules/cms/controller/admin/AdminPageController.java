@@ -28,6 +28,7 @@ import com.fonepay.devportal.modules.cms.dto.request.BlockReorderRequest;
 import com.fonepay.devportal.modules.cms.dto.request.BlockUpdateRequest;
 import com.fonepay.devportal.modules.cms.dto.request.CreatePageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.PublishPageRequest;
+import com.fonepay.devportal.modules.cms.dto.request.RejectPageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.ReorderPagesRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdatePageRequest;
 import com.fonepay.devportal.modules.cms.dto.response.PageMetaResponse;
@@ -37,6 +38,7 @@ import com.fonepay.devportal.modules.cms.service.BlockService;
 import com.fonepay.devportal.modules.cms.service.PageService;
 import com.fonepay.devportal.modules.cms.service.PublishService;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.security.annotation.RequireAdmin;
 import com.fonepay.devportal.security.annotation.RequireEditor;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -110,6 +112,51 @@ public class AdminPageController {
         return ResponseEntity.ok(success(HttpStatus.OK, "Page archived successfully", data));
     }
 
+    @PostMapping(ApiRoutes.Cms.PAGE_SUBMIT_REVIEW)
+    public ResponseEntity<ApiResponse<PageMetaResponse>> submitForReview(
+            @PathVariable @NotBlank String pageId,
+            @AuthenticationPrincipal User user,
+            HttpServletRequest httpRequest) {
+
+        String userId = currentUserId(user);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("User [{}] submitting page {} for review", userId, pageId);
+
+        PageMetaResponse data = pageService.submitForReview(pageId, userId, sourceIp);
+        return ResponseEntity.ok(success(HttpStatus.OK, "Page submitted for review successfully", data));
+    }
+
+    @RequireAdmin
+    @PostMapping(ApiRoutes.Cms.PAGE_APPROVE)
+    public ResponseEntity<ApiResponse<PageMetaResponse>> approvePage(
+            @PathVariable @NotBlank String pageId,
+            @AuthenticationPrincipal User user,
+            HttpServletRequest httpRequest) {
+
+        String adminId = currentUserId(user);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("Admin [{}] approving page {}", adminId, pageId);
+
+        PageMetaResponse data = pageService.approvePage(pageId, adminId, sourceIp);
+        return ResponseEntity.ok(success(HttpStatus.OK, "Page approved and published successfully", data));
+    }
+
+    @RequireAdmin
+    @PostMapping(ApiRoutes.Cms.PAGE_REJECT)
+    public ResponseEntity<ApiResponse<PageMetaResponse>> rejectPage(
+            @PathVariable @NotBlank String pageId,
+            @Valid @RequestBody RejectPageRequest request,
+            @AuthenticationPrincipal User user,
+            HttpServletRequest httpRequest) {
+
+        String adminId = currentUserId(user);
+        String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
+        log.info("Admin [{}] rejecting page {} with reason: {}", adminId, pageId, request.getReason());
+
+        PageMetaResponse data = pageService.rejectPage(pageId, request, adminId, sourceIp);
+        return ResponseEntity.ok(success(HttpStatus.OK, "Page rejected and returned to draft with feedback", data));
+    }
+
     @PostMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks")
     public ResponseEntity<ApiResponse<Block>> addBlock(
             @PathVariable String pageId,
@@ -151,6 +198,7 @@ public class AdminPageController {
         return ResponseEntity.ok(success(HttpStatus.OK, "Block deleted successfully", null));
     }
 
+    @RequireAdmin
     @PostMapping(ApiRoutes.Cms.PAGE_PUBLISH)
     public ResponseEntity<ApiResponse<PageMetaResponse>> publishPage(
             @PathVariable @NotBlank String pageId,

@@ -23,14 +23,18 @@ import com.fonepay.devportal.modules.cms.document.Page;
 import com.fonepay.devportal.modules.cms.document.Product;
 import com.fonepay.devportal.modules.cms.dto.request.CreatePageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.PageHierarchyUpdateDto;
+import com.fonepay.devportal.modules.cms.dto.request.PublishPageRequest;
+import com.fonepay.devportal.modules.cms.dto.request.RejectPageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdatePageRequest;
 import com.fonepay.devportal.modules.cms.dto.response.PageMetaResponse;
 import com.fonepay.devportal.modules.cms.dto.response.PageTreeNodeResponse;
 import com.fonepay.devportal.modules.cms.enums.PageStatus;
 import com.fonepay.devportal.modules.cms.mapper.PageMapper;
 import com.fonepay.devportal.modules.cms.repository.PageRepository;
+import com.fonepay.devportal.modules.cms.service.AuditLogService;
 import com.fonepay.devportal.modules.cms.service.PageService;
 import com.fonepay.devportal.modules.cms.service.PageTreeBuilder;
+import com.fonepay.devportal.modules.cms.service.PublishService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +49,8 @@ public class PageServiceImpl implements PageService {
     private final PageRepository pageRepository;
     private final MongoTemplate mongoTemplate;
     private final PageMapper pageMapper;
+    private final AuditLogService auditLogService;
+    private final PublishService publishService;
     private final Clock clock;
 
     @Override
@@ -150,6 +156,85 @@ public class PageServiceImpl implements PageService {
 
         log.info("Archived page {} and {} descendant(s)", pageId, toArchive.size() - 1);
         return pageMapper.toMetaResponse(page);
+    }
+
+    @Override
+    public PageMetaResponse submitForReview(String pageId, String userId, String sourceIp) {
+        Page page = requirePage(pageId);
+
+        if (page.getStatus() == PageStatus.PUBLISHED) {
+            throw new BadRequestException("Cannot submit a page that is already PUBLISHED");
+        }
+        if (page.getStatus() == PageStatus.ARCHIVED) {
+            throw new BadRequestException("Cannot submit an ARCHIVED page for review");
+        }
+        if (page.getStatus() == PageStatus.IN_REVIEW) {
+            throw new BadRequestException("Page is already IN_REVIEW");
+        }
+
+        Instant now = clock.instant();
+        page.setStatus(PageStatus.IN_REVIEW);
+        page.setSubmittedBy(userId);
+        page.setSubmittedAt(now);
+        page.setReviewNotes(null);
+        page.setUpdatedAt(now);
+
+        Page saved = pageRepository.save(page);
+        log.info("Page submitted for review: id={}, submittedBy={}", saved.getId(), userId);
+        auditLogService.logAction(userId, "PAGE_SUBMIT_REVIEW", saved.getId(), "PAGE", sourceIp);
+        return pageMapper.toMetaResponse(saved);
+    }
+
+    @Override
+    public PageMetaResponse approvePage(String pageId, String adminId, String sourceIp) {
+        Page page = requirePage(pageId);
+
+        if (page.getStatus() == PageStatus.PUBLISHED) {
+            throw new BadRequestException("Page is already PUBLISHED");
+        }
+        if (page.getStatus() != PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Only pages with IN_REVIEW status can be approved. Current status: " + page.getStatus());
+        }
+
+        Instant now = clock.instant();
+        page.setReviewedBy(adminId);
+        page.setReviewedAt(now);
+        page.setUpdatedAt(now);
+        pageRepository.save(page);
+
+        PublishPageRequest publishRequest = PublishPageRequest.builder()
+                .commitMessage("Approved and published")
+                .build();
+        PageMetaResponse published = publishService.publishPage(pageId, publishRequest, adminId, sourceIp);
+        log.info("Page approved & published: id={}, approvedBy={}", pageId, adminId);
+        auditLogService.logAction(adminId, "PAGE_APPROVE_PUBLISH", pageId, "PAGE", sourceIp);
+        return published;
+    }
+
+    @Override
+    public PageMetaResponse rejectPage(String pageId, RejectPageRequest request, String adminId, String sourceIp) {
+        if (request == null || request.getReason() == null || request.getReason().isBlank()) {
+            throw new BadRequestException("Rejection reason / review notes are required");
+        }
+
+        Page page = requirePage(pageId);
+        if (page.getStatus() != PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Only pages with IN_REVIEW status can be rejected. Current status: " + page.getStatus());
+        }
+
+        Instant now = clock.instant();
+        page.setStatus(PageStatus.DRAFT);
+        page.setReviewNotes(request.getReason().trim());
+        page.setReviewedBy(adminId);
+        page.setReviewedAt(now);
+        page.setUpdatedAt(now);
+
+        Page saved = pageRepository.save(page);
+        log.info("Page rejected: id={}, rejectedBy={}, reason={}", saved.getId(), adminId, request.getReason());
+        auditLogService.logAction(adminId, "PAGE_REJECT", saved.getId(), "PAGE", sourceIp);
+        return pageMapper.toMetaResponse(saved);
     }
 
     @Override
