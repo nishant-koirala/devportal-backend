@@ -17,4 +17,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(value = TestCredentialBlockData.class, name = "TEST_CREDENTIAL")
 })
 public interface BlockData {
+    default void sanitize() {
+        // By default, do nothing. Blocks with rich text should override this.
+    }
 }
