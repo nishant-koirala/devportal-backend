@@ -34,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RegistrationServiceImpl implements RegistrationService {
 
-    private static final String DEFAULT_ROLE = "ADMIN";
+    private static final String DEFAULT_ROLE = "DEVELOPER";
     private static final long EMAIL_VERIFICATION_TOKEN_HOURS = 24;
     private static final long RESEND_COOLDOWN_SECONDS = 60;
 
@@ -58,7 +58,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         if (existingUserOpt.isPresent()) {
             User existingUser = existingUserOpt.get();
-            if (existingUser.isEmailVerified()) {
+            if (existingUser.isEmailVerified() || hasInternalStaffRole(existingUser)) {
                 throw new UserAlreadyExistsException("User already exists with email: " + email);
             }
             
@@ -144,5 +144,14 @@ public class RegistrationServiceImpl implements RegistrationService {
     private void sendVerificationEmail(String email, String rawToken) {
         String verificationUrl = frontendUrl + "/verify-email?token=" + rawToken;
         emailService.sendVerificationEmail(email, verificationUrl);
+    }
+
+    private boolean hasInternalStaffRole(User user) {
+        if (user.getRoles() == null) {
+            return false;
+        }
+        return user.getRoles().stream()
+                .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getRoleName())
+                        || "EDITOR".equalsIgnoreCase(role.getRoleName()));
     }
 }

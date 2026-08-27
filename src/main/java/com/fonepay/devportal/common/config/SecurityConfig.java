@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/resend-verification",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
+                                "/api/v1/auth/accept-invite",
                                 "/api/v1/auth/otp/**",
                                 "/api/v1/auth/admin/**",
                                 "/api/v1/auth/editor/**")

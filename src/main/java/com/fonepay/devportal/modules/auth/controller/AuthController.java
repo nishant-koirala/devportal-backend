@@ -16,18 +16,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
+import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.util.HttpRequestUtil;
+import com.fonepay.devportal.modules.auth.dto.request.AcceptInviteRequest;
 import com.fonepay.devportal.modules.auth.dto.request.ForgotPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.request.LoginRequest;
 import com.fonepay.devportal.modules.auth.dto.request.OtpVerifyRequest;
 import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
 import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
+import com.fonepay.devportal.modules.auth.dto.response.InvitePreviewResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.service.AdminAuthService;
 import com.fonepay.devportal.modules.auth.service.AuthService;
+import com.fonepay.devportal.modules.auth.service.InviteAcceptanceService;
 import com.fonepay.devportal.modules.auth.service.LoginService;
 import com.fonepay.devportal.modules.auth.service.PasswordService;
 import com.fonepay.devportal.modules.auth.service.RegistrationService;
@@ -43,6 +47,7 @@ public class AuthController {
 
         private final LoginService loginService;
         private final RegistrationService registrationService;
+        private final InviteAcceptanceService inviteAcceptanceService;
         private final PasswordService passwordService;
         private final AuthService authService;
         private final AdminAuthService adminAuthService;
@@ -121,6 +126,41 @@ public class AuthController {
                                                 .status(HttpStatus.OK.value())
                                                 .success(true)
                                                 .message("Verification email resent successfully.")
+                                                .timestamp(LocalDateTime.now(clock))
+                                                .build());
+        }
+
+        @GetMapping(ApiRoutes.Auth.ACCEPT_INVITE)
+        public ResponseEntity<ApiResponse<InvitePreviewResponse>> previewInvite(
+                        @RequestParam(value = "token", required = false) String token) {
+                if (token == null || token.isBlank()) {
+                        throw new BadRequestException(
+                                        "Pass the invite token as a query parameter: GET /api/v1/auth/accept-invite?token=YOUR_TOKEN");
+                }
+                InvitePreviewResponse response = inviteAcceptanceService.previewInvite(token);
+
+                return ResponseEntity.ok(
+                                ApiResponse.<InvitePreviewResponse>builder()
+                                                .status(HttpStatus.OK.value())
+                                                .success(true)
+                                                .message("Invitation is valid")
+                                                .data(response)
+                                                .timestamp(LocalDateTime.now(clock))
+                                                .build());
+        }
+
+        @PostMapping(ApiRoutes.Auth.ACCEPT_INVITE)
+        public ResponseEntity<ApiResponse<RegistrationResponse>> acceptInvite(
+                        @Valid @RequestBody AcceptInviteRequest request) {
+
+                RegistrationResponse response = inviteAcceptanceService.acceptInvite(request);
+
+                return ResponseEntity.ok(
+                                ApiResponse.<RegistrationResponse>builder()
+                                                .status(HttpStatus.OK.value())
+                                                .success(true)
+                                                .message("Account activated successfully. You can now log in.")
+                                                .data(response)
                                                 .timestamp(LocalDateTime.now(clock))
                                                 .build());
         }

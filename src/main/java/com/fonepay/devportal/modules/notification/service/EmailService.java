@@ -62,6 +62,23 @@ public class EmailService {
         }
     }
 
+    public void sendInviteEmail(String toEmail, String inviteUrl, String role, String departmentName,
+            String fullName) {
+        log.info("Sending staff invite email to: {}", toEmail);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("You have been invited to Fonepay Developer Portal");
+            message.setText(buildInviteEmailBody(inviteUrl, role, departmentName, fullName));
+            javaMailSender.send(message);
+            log.info("Invite email sent successfully to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send invite email to: {}", toEmail, e);
+            throw new EmailSendException("Failed to send email", e);
+        }
+    }
+
     public void sendOtpEmail(String toEmail, String otpCode, String userName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -75,6 +92,24 @@ public class EmailService {
             log.error("Failed to send OTP email to: {}", toEmail, e);
             throw new EmailSendException("Failed to send OTP email", e);
         }
+    }
+
+    private String buildInviteEmailBody(String inviteUrl, String role, String departmentName, String fullName) {
+        String greeting = (fullName != null && !fullName.trim().isEmpty())
+                ? "Hello " + fullName.trim() + ",\n\n"
+                : "Hello,\n\n";
+
+        String departmentLine = (departmentName != null && !departmentName.trim().isEmpty())
+                ? " in the " + departmentName.trim() + " department"
+                : "";
+
+        return greeting
+                + "You have been invited to join the Fonepay Developer Portal as " + role + departmentLine + ".\n\n"
+                + "Click the link below to set your password and activate your account:\n"
+                + inviteUrl + "\n\n"
+                + "This link will expire in 48 hours. If you were not expecting this invitation, you can ignore this email.\n\n"
+                + "Regards,\n"
+                + "Fonepay Developer Portal Team";
     }
 
     private String buildOtpEmailBody(String otpCode, String userName) {

@@ -157,9 +157,19 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+            throw new UnauthorizedException(
+                    "Account setup is not complete. Please use the invite link sent to your email.");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             log.warn("Password mismatch for: {}", request.getEmail());
             throw new UnauthorizedException("Invalid email or password");
+        }
+
+        if (user.getStatus() == UserStatus.PENDING) {
+            throw new UnauthorizedException(
+                    "Account setup is not complete. Please use the invite link sent to your email.");
         }
 
         if (user.getStatus() == UserStatus.DEACTIVATED || user.getStatus() == UserStatus.INACTIVE) {

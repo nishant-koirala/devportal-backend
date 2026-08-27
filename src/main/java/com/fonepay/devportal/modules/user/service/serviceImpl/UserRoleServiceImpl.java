@@ -40,13 +40,21 @@ public class UserRoleServiceImpl implements UserRoleService {
 
         @Override
         public void assignDefaultRole(String userId, String roleName) {
-                // Ensure the role exists in the master Role collection
+                assignRole(userId, roleName, "SYSTEM");
+        }
+
+        @Override
+        public void assignRole(String userId, String roleName, String assignedBy) {
                 Role role = roleRepository.findByRoleName(roleName)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 roleName + " role not found in database"));
 
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+                if (user.getRoles() == null) {
+                        user.setRoles(new java.util.ArrayList<>());
+                }
 
                 boolean hasRole = user.getRoles().stream()
                                 .anyMatch(r -> r.getRoleName().equals(role.getRoleName()));
@@ -55,14 +63,40 @@ public class UserRoleServiceImpl implements UserRoleService {
                         AssignedRole newRole = AssignedRole.builder()
                                         .roleName(role.getRoleName())
                                         .assignedAt(Instant.now(clock))
-                                        .assignedBy("SYSTEM") // Can be updated if an Admin assigns this later
+                                        .assignedBy(assignedBy != null && !assignedBy.isBlank() ? assignedBy : "SYSTEM")
                                         .build();
 
                         user.getRoles().add(newRole);
                         userRepository.save(user);
-                        log.info("Assigned role '{}' to user '{}'", roleName, userId);
+                        log.info("Assigned role '{}' to user '{}' by '{}'", roleName, userId, assignedBy);
                 } else {
                         log.info("User '{}' already has role '{}'", userId, roleName);
                 }
+        }
+
+        @Override
+        public void replaceStaffRole(String userId, String roleName, String assignedBy) {
+                Role role = roleRepository.findByRoleName(roleName)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                roleName + " role not found in database"));
+
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+                if (user.getRoles() == null) {
+                        user.setRoles(new java.util.ArrayList<>());
+                }
+
+                user.getRoles().removeIf(r -> "ADMIN".equalsIgnoreCase(r.getRoleName())
+                                || "EDITOR".equalsIgnoreCase(r.getRoleName()));
+
+                user.getRoles().add(AssignedRole.builder()
+                                .roleName(role.getRoleName())
+                                .assignedAt(Instant.now(clock))
+                                .assignedBy(assignedBy != null && !assignedBy.isBlank() ? assignedBy : "SYSTEM")
+                                .build());
+
+                userRepository.save(user);
+                log.info("Replaced staff role with '{}' for user '{}' by '{}'", roleName, userId, assignedBy);
         }
 }

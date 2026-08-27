@@ -129,6 +129,13 @@ public class UserTokenServiceImpl implements UserTokenService {
 
     @Override
     public UserToken validateAndConsumeToken(String rawToken, TokenType expectedType) {
+        UserToken token = validateToken(rawToken, expectedType);
+        consumeToken(token);
+        return token;
+    }
+
+    @Override
+    public UserToken validateToken(String rawToken, TokenType expectedType) {
         if (rawToken == null || rawToken.isBlank()) {
             throw new InvalidOrExpiredTokenException("Invalid token");
         }
@@ -146,12 +153,17 @@ public class UserTokenServiceImpl implements UserTokenService {
             throw new InvalidOrExpiredTokenException("This verification link has already been used.");
         }
 
-        if (token.getExpiresAt().isBefore(Instant.now(clock))) {
+        if (token.getExpiresAt() != null && token.getExpiresAt().isBefore(Instant.now(clock))) {
             throw new InvalidOrExpiredTokenException("Token has expired");
         }
 
+        return token;
+    }
+
+    @Override
+    public void consumeToken(UserToken token) {
         token.setUsedAt(Instant.now(clock));
-        return tokenRepository.save(token);
+        tokenRepository.save(token);
     }
 
     @Override

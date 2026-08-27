@@ -24,6 +24,7 @@ public final class ApiRoutes {
         public static final String ADMIN_OTP_SETUP = "/admin/otp/setup";
         public static final String ADMIN_OTP_VERIFY = "/admin/otp/verify";
         public static final String EDITOR_OTP_VERIFY = "/editor/otp/verify";
+        public static final String ACCEPT_INVITE = "/accept-invite";
     }
 
     public static final class Admin {
@@ -44,6 +45,9 @@ public final class ApiRoutes {
         public static final String PRODUCT_RESOURCE_BY_ID = "/{id}/resources/{resourceId}";
 
         public static final String AUDIT_LOGS = BASE + "/audit-logs";
+
+        public static final String DEPARTMENTS = BASE + "/departments";
+        public static final String INVITATIONS = BASE + "/invitations";
     }
 
     public static final class Public {

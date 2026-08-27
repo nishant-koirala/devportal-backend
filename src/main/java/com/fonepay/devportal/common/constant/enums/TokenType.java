@@ -4,6 +4,7 @@ public enum TokenType {
     EMAIL_VERIFICATION,
     PASSWORD_RESET,
     REFRESH_TOKEN,
-    LOGIN_OTP
+    LOGIN_OTP,
+    INVITE
 }
 
