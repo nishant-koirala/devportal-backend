@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+import com.fonepay.devportal.common.util.HtmlSanitizerUtil;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,6 +17,16 @@ public class TestCredentialBlockData implements BlockData {
     private String baseUrl;
     private List<Credential> credentials;
     private String usageNotes;
+
+    @Override
+    public void sanitize() {
+        this.usageNotes = HtmlSanitizerUtil.sanitize(this.usageNotes);
+        if (credentials != null) {
+            for (Credential c : credentials) {
+                c.setDescription(HtmlSanitizerUtil.sanitize(c.getDescription()));
+            }
+        }
+    }
 
     @Data
     @NoArgsConstructor

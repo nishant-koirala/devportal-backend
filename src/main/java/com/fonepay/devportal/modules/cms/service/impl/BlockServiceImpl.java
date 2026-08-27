@@ -59,6 +59,8 @@ public class BlockServiceImpl implements BlockService {
                 data
         );
 
+        data.sanitize();
+
         draftBlocks.add(newBlock);
         
         // Re-sort to maintain array consistency in DB based on order
@@ -72,6 +74,7 @@ public class BlockServiceImpl implements BlockService {
     @Override
     public boolean updateBlockData(String pageId, String blockId, BlockData data, long currentVersion) {
         requireEditablePage(pageId);
+        data.sanitize();
         boolean success = pageRepository.updateDraftBlock(pageId, blockId, data, currentVersion);
         if (!success) {
             throw new ConcurrentUpdateException("The block has been modified by another user. Please refresh and try again.");
