@@ -30,18 +30,20 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PublicRateLimitingFilter extends OncePerRequestFilter {
 
-    private static final int MAX_REQUESTS_PER_MINUTE = 60;
-    private static final long WINDOW_SIZE_MILLIS = 60_000L; // 1 minute
+    private static final int PUBLIC_MAX_REQUESTS_PER_MINUTE = 60;
+    private static final int AUTH_MAX_REQUESTS_PER_MINUTE = 10;
+    private static final long WINDOW_SIZE_MILLIS = 60_000L;
+
+    private static final String PUBLIC_PREFIX = "/api/v1/public/";
+    private static final String AUTH_PREFIX = "/api/v1/auth/";
 
     private final Clock clock;
     private final Map<String, RateLimitBucket> buckets = new ConcurrentHashMap<>();
 
-
-
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path == null || !path.startsWith("/api/v1/public/");
+        String path = resolvePath(request);
+        return path == null || !(isPublicPath(path) || isAuthPath(path));
     }
 
     @Override
@@ -50,13 +52,17 @@ public class PublicRateLimitingFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        String path = resolvePath(request);
         String clientIp = HttpRequestUtil.getClientIp(request);
         if (clientIp == null || clientIp.isBlank()) {
             clientIp = request.getRemoteAddr();
         }
 
+        int maxRequests = maxRequestsFor(path);
+        String bucketKey = (isAuthPath(path) ? "auth:" : "public:") + clientIp;
+
         long now = clock.millis();
-        RateLimitBucket bucket = buckets.compute(clientIp, (key, existing) -> {
+        RateLimitBucket bucket = buckets.compute(bucketKey, (key, existing) -> {
             if (existing == null || now - existing.windowStartMillis >= WINDOW_SIZE_MILLIS) {
                 return new RateLimitBucket(now, new AtomicInteger(1));
             }
@@ -68,13 +74,13 @@ public class PublicRateLimitingFilter extends OncePerRequestFilter {
         long windowElapsed = now - bucket.windowStartMillis;
         long resetSeconds = Math.max(1, (WINDOW_SIZE_MILLIS - windowElapsed) / 1000);
 
-        response.setHeader("X-RateLimit-Limit", String.valueOf(MAX_REQUESTS_PER_MINUTE));
-        response.setHeader("X-RateLimit-Remaining", String.valueOf(Math.max(0, MAX_REQUESTS_PER_MINUTE - currentCount)));
+        response.setHeader("X-RateLimit-Limit", String.valueOf(maxRequests));
+        response.setHeader("X-RateLimit-Remaining", String.valueOf(Math.max(0, maxRequests - currentCount)));
         response.setHeader("X-RateLimit-Reset", String.valueOf(resetSeconds));
 
-        if (currentCount > MAX_REQUESTS_PER_MINUTE) {
-            log.warn("Rate limit exceeded for IP {} on public endpoint {}: {} requests in current window",
-                    clientIp, request.getServletPath(), currentCount);
+        if (currentCount > maxRequests) {
+            log.warn("Rate limit exceeded for IP {} on {} {}: {} requests in current window",
+                    clientIp, isAuthPath(path) ? "auth" : "public", path, currentCount);
 
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -90,13 +96,31 @@ public class PublicRateLimitingFilter extends OncePerRequestFilter {
             return;
         }
 
-
-        // Periodically purge stale buckets to prevent memory leak
         if (buckets.size() > 5000) {
             cleanupStaleBuckets(now);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static String resolvePath(HttpServletRequest request) {
+        String path = request.getServletPath();
+        if (path == null || path.isBlank()) {
+            path = request.getRequestURI();
+        }
+        return path;
+    }
+
+    private static boolean isPublicPath(String path) {
+        return path.startsWith(PUBLIC_PREFIX);
+    }
+
+    private static boolean isAuthPath(String path) {
+        return path.startsWith(AUTH_PREFIX);
+    }
+
+    private static int maxRequestsFor(String path) {
+        return isAuthPath(path) ? AUTH_MAX_REQUESTS_PER_MINUTE : PUBLIC_MAX_REQUESTS_PER_MINUTE;
     }
 
     private void cleanupStaleBuckets(long now) {

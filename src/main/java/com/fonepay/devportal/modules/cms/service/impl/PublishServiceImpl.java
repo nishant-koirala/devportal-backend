@@ -42,11 +42,19 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     public PageMetaResponse publishPage(String pageId, PublishPageRequest request, String adminId, String sourceIp) {
-        log.info("Publishing page {} by admin {}", pageId, adminId);
-
-        // Retrieve the current Page
         Page page = pageRepository.findById(pageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Page not found with ID: " + pageId));
+        return publishPage(page, request, adminId, sourceIp);
+    }
+
+    @Override
+    public PageMetaResponse publishPage(Page page, PublishPageRequest request, String adminId, String sourceIp) {
+        if (page == null || page.getId() == null) {
+            throw new ResourceNotFoundException("Page not found");
+        }
+
+        String pageId = page.getId();
+        log.info("Publishing page {} by admin {}", pageId, adminId);
 
         if (page.getStatus() == PageStatus.ARCHIVED) {
             throw new BadRequestException("Cannot publish an archived page");
@@ -56,21 +64,16 @@ public class PublishServiceImpl implements PublishService {
                     "Only pages with IN_REVIEW status can be published. Current status: " + page.getStatus());
         }
 
-        // Copy the entire draftBlocks array into the publishedBlocks array
         List<Block> draftBlocks = page.getDraftBlocks() != null ? page.getDraftBlocks() : Collections.emptyList();
         List<Block> snapshotBlocks = new ArrayList<>(draftBlocks);
         page.setPublishedBlocks(snapshotBlocks);
 
-        // Query the PageVersionRepository to find the latest version number for this
-        // page. Increment it by 1.
         int nextVersion = pageVersionRepository.findTopByPageIdOrderByVersionNumberDesc(pageId)
                 .map(v -> v.getVersionNumber() + 1)
                 .orElse(1);
 
         Instant now = Instant.now(clock);
 
-        // Create a new PageVersion document containing the copied block array, the new
-        // version number, and the admin's commit message. Save it.
         PageVersion pageVersion = PageVersion.builder()
                 .id(IdGenerator.nextUlid())
                 .pageId(page.getId())
@@ -85,14 +88,12 @@ public class PublishServiceImpl implements PublishService {
         pageVersionRepository.save(pageVersion);
         log.info("Created page version {} for page {}", nextVersion, pageId);
 
-        // Update the Page document's status to PUBLISHED and set lastPublishedAt.
         page.setStatus(PageStatus.PUBLISHED);
         page.setLastPublishedAt(now);
         page.setUpdatedAt(now);
         Page savedPage = pageRepository.save(page);
         log.info("Updated page {} status to PUBLISHED", pageId);
 
-        // Record the publish event via AuditLogService
         auditLogService.logAction(adminId, "PAGE_PUBLISH", savedPage.getId(), "PAGE", sourceIp);
 
         return pageMapper.toMetaResponse(savedPage);
@@ -177,6 +178,10 @@ public class PublishServiceImpl implements PublishService {
 
         if (page.getStatus() == PageStatus.ARCHIVED) {
             throw new BadRequestException("Cannot revert an archived page");
+        }
+        if (page.getStatus() == PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Page is IN_REVIEW and cannot be edited until an admin approves or rejects it");
         }
 
         PageVersion targetVersion = pageVersionRepository.findByPageIdAndVersionNumber(pageId, versionNumber)
