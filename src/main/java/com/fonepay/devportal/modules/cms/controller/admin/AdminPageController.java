@@ -293,6 +293,7 @@ public class AdminPageController {
                         .build());
     }
 
+    // Publish and Versioning Controller
     @RequireAdmin
     @PostMapping(ApiRoutes.Cms.PAGE_PUBLISH)
     public ResponseEntity<ApiResponse<PageMetaResponse>> publishPage(

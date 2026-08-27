@@ -48,6 +48,21 @@ public final class ApiRoutes {
 
         public static final String DEPARTMENTS = BASE + "/departments";
         public static final String INVITATIONS = BASE + "/invitations";
+        public static final String BROADCASTS = BASE + "/broadcasts";
+        public static final String BROADCAST_BY_ID = "/{id}";
+        public static final String BROADCAST_CANCEL = "/{id}/cancel";
+        public static final String BROADCAST_METRICS = "/{id}/metrics";
+    }
+
+    public static final class Staff {
+        public static final String BASE = API_V1 + "/staff";
+        public static final String BROADCASTS = BASE + "/broadcasts";
+        public static final String BROADCAST_STREAM = "/stream";
+        public static final String BROADCAST_ACTIVE = "/active";
+        public static final String BROADCAST_SUMMARY = "/summary";
+        public static final String BROADCAST_READ = "/{id}/read";
+        public static final String BROADCAST_DISMISS = "/{id}/dismiss";
+        public static final String BROADCAST_READ_ALL = "/read-all";
     }
 
     public static final class Public {
