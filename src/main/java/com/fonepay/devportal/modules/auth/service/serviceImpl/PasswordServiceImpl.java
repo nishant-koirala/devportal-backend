@@ -23,6 +23,7 @@ import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.service.UserSessionService;
+import com.fonepay.devportal.security.RateLimitService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +41,7 @@ public class PasswordServiceImpl implements PasswordService {
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
     private final ActivityRecordingService activityRecordingService;
+    private final RateLimitService rateLimitService;
 
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
@@ -47,6 +49,7 @@ public class PasswordServiceImpl implements PasswordService {
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
         String email = request.getEmail().trim().toLowerCase();
+        rateLimitService.checkAuthEmail(email);
 
         userRepository.findByEmail(email).ifPresent(user -> {
             if (user.getStatus() == UserStatus.DEACTIVATED) {

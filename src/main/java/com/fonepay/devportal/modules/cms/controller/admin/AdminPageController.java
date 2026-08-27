@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
-import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.common.util.HttpRequestUtil;
 import com.fonepay.devportal.modules.cms.document.Block;
 import com.fonepay.devportal.modules.cms.dto.request.BlockCreateRequest;
@@ -64,20 +63,36 @@ public class AdminPageController {
     public ResponseEntity<ApiResponse<PageMetaResponse>> createPage(
             @PathVariable @NotBlank String productId,
             @Valid @RequestBody CreatePageRequest request,
-            @AuthenticationPrincipal User user) {
+            Authentication authentication) {
 
+        String adminId = extractAdminId(authentication);
         log.info("Creating page '{}' for product {}", request.getSlug(), productId);
-        PageMetaResponse data = pageService.createPage(productId, request, currentUserId(user));
+        PageMetaResponse response = pageService.createPage(productId, request, adminId);
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(success(HttpStatus.CREATED, "Page created successfully", data));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.CREATED.value())
+                        .success(true)
+                        .message("Page created successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @GetMapping(ApiRoutes.Cms.PRODUCT_PAGE_TREE)
     public ResponseEntity<ApiResponse<List<PageTreeNodeResponse>>> getPageTree(
             @PathVariable @NotBlank String productId) {
+
         List<PageTreeNodeResponse> tree = pageService.getPageTree(productId);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page tree retrieved successfully", tree));
+
+        return ResponseEntity.ok(
+                ApiResponse.<List<PageTreeNodeResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page tree retrieved successfully")
+                        .data(tree)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @PutMapping(ApiRoutes.Cms.PRODUCT_PAGES_REORDER)
@@ -87,13 +102,28 @@ public class AdminPageController {
 
         log.info("Reordering {} page(s) for product {}", request.getUpdates().size(), productId);
         pageService.movePages(productId, request.getUpdates());
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page hierarchy updated successfully", null));
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page hierarchy updated successfully")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @GetMapping(ApiRoutes.Cms.PAGE_BY_ID)
     public ResponseEntity<ApiResponse<PageMetaResponse>> getPage(@PathVariable @NotBlank String pageId) {
-        PageMetaResponse data = pageService.getPage(pageId);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page retrieved successfully", data));
+        PageMetaResponse response = pageService.getPage(pageId);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page retrieved successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @PatchMapping(ApiRoutes.Cms.PAGE_BY_ID)
@@ -101,44 +131,76 @@ public class AdminPageController {
             @PathVariable @NotBlank String pageId,
             @Valid @RequestBody UpdatePageRequest request) {
 
-        PageMetaResponse data = pageService.updatePage(pageId, request);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page updated successfully", data));
+        PageMetaResponse response = pageService.updatePage(pageId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page updated successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @DeleteMapping(ApiRoutes.Cms.PAGE_BY_ID)
     public ResponseEntity<ApiResponse<PageMetaResponse>> archivePage(@PathVariable @NotBlank String pageId) {
         log.info("Archiving page {}", pageId);
-        PageMetaResponse data = pageService.archivePage(pageId);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page archived successfully", data));
+        PageMetaResponse response = pageService.archivePage(pageId);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page archived successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @PostMapping(ApiRoutes.Cms.PAGE_SUBMIT_REVIEW)
     public ResponseEntity<ApiResponse<PageMetaResponse>> submitForReview(
             @PathVariable @NotBlank String pageId,
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             HttpServletRequest httpRequest) {
 
-        String userId = currentUserId(user);
+        String userId = extractAdminId(authentication);
         String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
         log.info("User [{}] submitting page {} for review", userId, pageId);
 
-        PageMetaResponse data = pageService.submitForReview(pageId, userId, sourceIp);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page submitted for review successfully", data));
+        PageMetaResponse response = pageService.submitForReview(pageId, userId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page submitted for review successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @RequireAdmin
     @PostMapping(ApiRoutes.Cms.PAGE_APPROVE)
     public ResponseEntity<ApiResponse<PageMetaResponse>> approvePage(
             @PathVariable @NotBlank String pageId,
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             HttpServletRequest httpRequest) {
 
-        String adminId = currentUserId(user);
+        String adminId = extractAdminId(authentication);
         String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
         log.info("Admin [{}] approving page {}", adminId, pageId);
 
-        PageMetaResponse data = pageService.approvePage(pageId, adminId, sourceIp);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page approved and published successfully", data));
+        PageMetaResponse response = pageService.approvePage(pageId, adminId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page approved and published successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @RequireAdmin
@@ -146,15 +208,23 @@ public class AdminPageController {
     public ResponseEntity<ApiResponse<PageMetaResponse>> rejectPage(
             @PathVariable @NotBlank String pageId,
             @Valid @RequestBody RejectPageRequest request,
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             HttpServletRequest httpRequest) {
 
-        String adminId = currentUserId(user);
+        String adminId = extractAdminId(authentication);
         String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
         log.info("Admin [{}] rejecting page {} with reason: {}", adminId, pageId, request.getReason());
 
-        PageMetaResponse data = pageService.rejectPage(pageId, request, adminId, sourceIp);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page rejected and returned to draft with feedback", data));
+        PageMetaResponse response = pageService.rejectPage(pageId, request, adminId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page rejected and returned to draft with feedback")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @PostMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks")
@@ -164,7 +234,14 @@ public class AdminPageController {
 
         Block block = blockService.addBlock(pageId, request.getType(), request.getData(), request.getOrder());
 
-        return ResponseEntity.ok(success(HttpStatus.OK, "Block added successfully", block));
+        return ResponseEntity.ok(
+                ApiResponse.<Block>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Block added successfully")
+                        .data(block)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @PutMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks/{blockId}")
@@ -175,7 +252,13 @@ public class AdminPageController {
 
         blockService.updateBlockData(pageId, blockId, request.getData(), request.getCurrentVersion());
 
-        return ResponseEntity.ok(success(HttpStatus.OK, "Block updated successfully", null));
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Block updated successfully")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @PatchMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks/reorder")
@@ -185,7 +268,13 @@ public class AdminPageController {
 
         blockService.reorderBlocks(pageId, request.getBlockIds());
 
-        return ResponseEntity.ok(success(HttpStatus.OK, "Blocks reordered successfully", null));
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Blocks reordered successfully")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @DeleteMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks/{blockId}")
@@ -195,7 +284,13 @@ public class AdminPageController {
 
         blockService.deleteBlock(pageId, blockId);
 
-        return ResponseEntity.ok(success(HttpStatus.OK, "Block deleted successfully", null));
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Block deleted successfully")
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     // Publish and Versioning Controller
@@ -204,15 +299,23 @@ public class AdminPageController {
     public ResponseEntity<ApiResponse<PageMetaResponse>> publishPage(
             @PathVariable @NotBlank String pageId,
             @Valid @RequestBody PublishPageRequest request,
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             HttpServletRequest httpRequest) {
 
-        String adminId = currentUserId(user);
+        String adminId = extractAdminId(authentication);
         String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
         log.info("Publishing page {} by admin {}", pageId, adminId);
 
-        PageMetaResponse data = publishService.publishPage(pageId, request, adminId, sourceIp);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page published successfully", data));
+        PageMetaResponse response = publishService.publishPage(pageId, request, adminId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page published successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @GetMapping(ApiRoutes.Cms.PAGE_VERSIONS)
@@ -220,7 +323,15 @@ public class AdminPageController {
             @PathVariable @NotBlank String pageId) {
 
         List<PageVersionResponse> versions = publishService.getPageVersions(pageId);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page versions retrieved successfully", versions));
+
+        return ResponseEntity.ok(
+                ApiResponse.<List<PageVersionResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page versions retrieved successfully")
+                        .data(versions)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @GetMapping(ApiRoutes.Cms.PAGE_VERSION_BY_NUMBER)
@@ -229,39 +340,53 @@ public class AdminPageController {
             @PathVariable int versionNumber) {
 
         PageVersionResponse version = publishService.getPageVersion(pageId, versionNumber);
-        return ResponseEntity.ok(success(HttpStatus.OK, "Page version retrieved successfully", version));
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageVersionResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page version retrieved successfully")
+                        .data(version)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
     @PostMapping(ApiRoutes.Cms.PAGE_REVERT)
     public ResponseEntity<ApiResponse<PageMetaResponse>> revertPageVersion(
             @PathVariable @NotBlank String pageId,
             @PathVariable int versionNumber,
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             HttpServletRequest httpRequest) {
 
-        String adminId = currentUserId(user);
+        String adminId = extractAdminId(authentication);
         String sourceIp = HttpRequestUtil.getClientIp(httpRequest);
         log.info("Reverting page {} to version {} by admin {}", pageId, versionNumber, adminId);
 
-        PageMetaResponse data = publishService.revertToVersion(pageId, versionNumber, adminId, sourceIp);
-        return ResponseEntity
-                .ok(success(HttpStatus.OK, "Page reverted to version " + versionNumber + " successfully", data));
+        PageMetaResponse response = publishService.revertToVersion(pageId, versionNumber, adminId, sourceIp);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page reverted to version " + versionNumber + " successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
     }
 
-    private String currentUserId(User user) {
-        if (user == null || user.getUserId() == null || user.getUserId().isBlank()) {
-            throw new UnauthorizedException("Authentication required");
+    private String extractAdminId(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof User user) {
+                return user.getUserId();
+            }
+            if (principal instanceof String str && !"anonymousUser".equalsIgnoreCase(str)) {
+                return str;
+            }
+            if (authentication.getName() != null && !"anonymousUser".equalsIgnoreCase(authentication.getName())) {
+                return authentication.getName();
+            }
         }
-        return user.getUserId();
-    }
-
-    private <T> ApiResponse<T> success(HttpStatus status, String message, T data) {
-        return ApiResponse.<T>builder()
-                .status(status.value())
-                .success(true)
-                .message(message)
-                .data(data)
-                .timestamp(LocalDateTime.now(clock))
-                .build();
+        return "UNKNOWN_ADMIN";
     }
 }

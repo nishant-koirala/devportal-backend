@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.fonepay.devportal.common.util.HtmlSanitizerUtil;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,4 +14,9 @@ public class EndpointBlockData implements BlockData {
     private String method;
     private String path;
     private String description;
+
+    @Override
+    public void sanitize() {
+        this.description = HtmlSanitizerUtil.sanitize(this.description);
+    }
 }

@@ -28,6 +28,7 @@ import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.service.UserRoleService;
 import com.fonepay.devportal.modules.user.service.UserSessionService;
 import com.fonepay.devportal.security.JwtUtil;
+import com.fonepay.devportal.security.RateLimitService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +50,7 @@ public class LoginServiceImpl implements LoginService {
     private final AuthMapper authMapper;
     private final Clock clock;
     private final ActivityRecordingService activityRecordingService;
+    private final RateLimitService rateLimitService;
 
     @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
@@ -59,6 +61,7 @@ public class LoginServiceImpl implements LoginService {
     @Override
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         log.info("Processing login request for: {}", request.getEmail());
+        rateLimitService.checkAuthEmail(request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));

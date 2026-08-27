@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -472,6 +473,10 @@ public class ProductServiceImpl implements ProductService {
     private Product saveWithOptimisticLockHandling(Product product) {
         try {
             return productRepository.save(product);
+        } catch (DuplicateKeyException ex) {
+            log.warn("Duplicate key while saving product name={}, slug={}: {}", product.getName(), product.getSlug(),
+                    ex.getMessage());
+            throw new DuplicateResourceException("Product with this name or slug already exists");
         } catch (OptimisticLockingFailureException ex) {
             log.warn("Optimistic lock failure while updating product ID: {}", product.getId());
             throw new DuplicateResourceException("Concurrent modification conflict: The product was updated by another administrator. Please reload and retry.");

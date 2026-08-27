@@ -1,11 +1,13 @@
 package com.fonepay.devportal.modules.cms.service.impl;
 
+import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.ConcurrentUpdateException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.modules.cms.document.Block;
 import com.fonepay.devportal.modules.cms.document.BlockData;
 import com.fonepay.devportal.modules.cms.document.Page;
 import com.fonepay.devportal.modules.cms.enums.BlockType;
+import com.fonepay.devportal.modules.cms.enums.PageStatus;
 import com.fonepay.devportal.modules.cms.repository.PageRepository;
 import com.fonepay.devportal.modules.cms.service.BlockService;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +29,7 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     public Block addBlock(String pageId, BlockType type, BlockData data, Integer specificOrder) {
-        Page page = pageRepository.findById(pageId)
-                .orElseThrow(() -> new ResourceNotFoundException("Page not found with id: " + pageId));
+        Page page = requireEditablePage(pageId);
 
         List<Block> draftBlocks = page.getDraftBlocks();
 
@@ -58,6 +59,8 @@ public class BlockServiceImpl implements BlockService {
                 data
         );
 
+        data.sanitize();
+
         draftBlocks.add(newBlock);
         
         // Re-sort to maintain array consistency in DB based on order
@@ -70,6 +73,8 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     public boolean updateBlockData(String pageId, String blockId, BlockData data, long currentVersion) {
+        requireEditablePage(pageId);
+        data.sanitize();
         boolean success = pageRepository.updateDraftBlock(pageId, blockId, data, currentVersion);
         if (!success) {
             throw new ConcurrentUpdateException("The block has been modified by another user. Please refresh and try again.");
@@ -79,8 +84,7 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     public void reorderBlocks(String pageId, List<String> blockIds) {
-        Page page = pageRepository.findById(pageId)
-                .orElseThrow(() -> new ResourceNotFoundException("Page not found with id: " + pageId));
+        Page page = requireEditablePage(pageId);
 
         List<Block> draftBlocks = page.getDraftBlocks();
         
@@ -109,8 +113,7 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     public void deleteBlock(String pageId, String blockId) {
-        Page page = pageRepository.findById(pageId)
-                .orElseThrow(() -> new ResourceNotFoundException("Page not found with id: " + pageId));
+        Page page = requireEditablePage(pageId);
 
         List<Block> draftBlocks = page.getDraftBlocks();
         
@@ -125,5 +128,15 @@ public class BlockServiceImpl implements BlockService {
         }
 
         pageRepository.save(page);
+    }
+
+    private Page requireEditablePage(String pageId) {
+        Page page = pageRepository.findById(pageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Page not found with id: " + pageId));
+        if (page.getStatus() == PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Page is IN_REVIEW and cannot be edited until an admin approves or rejects it");
+        }
+        return page;
     }
 }

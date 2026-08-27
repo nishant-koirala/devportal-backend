@@ -112,6 +112,10 @@ public class PageServiceImpl implements PageService {
         if (page.getStatus() == PageStatus.ARCHIVED) {
             throw new BadRequestException("Cannot update an archived page");
         }
+        if (page.getStatus() == PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Page is IN_REVIEW and cannot be edited until an admin approves or rejects it");
+        }
 
         if (!isBlank(request.getTitle())) {
             page.setTitle(request.getTitle().trim());
@@ -142,6 +146,10 @@ public class PageServiceImpl implements PageService {
         Page page = requirePage(pageId);
         if (page.getStatus() == PageStatus.ARCHIVED) {
             throw new BadRequestException("Page is already archived");
+        }
+        if (page.getStatus() == PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Page is IN_REVIEW and cannot be edited until an admin approves or rejects it");
         }
 
         Map<String, Page> byId = loadPagesById(page.getProductId());
@@ -201,12 +209,11 @@ public class PageServiceImpl implements PageService {
         page.setReviewedBy(adminId);
         page.setReviewedAt(now);
         page.setUpdatedAt(now);
-        pageRepository.save(page);
 
         PublishPageRequest publishRequest = PublishPageRequest.builder()
                 .commitMessage("Approved and published")
                 .build();
-        PageMetaResponse published = publishService.publishPage(pageId, publishRequest, adminId, sourceIp);
+        PageMetaResponse published = publishService.publishPage(page, publishRequest, adminId, sourceIp);
         log.info("Page approved & published: id={}, approvedBy={}", pageId, adminId);
         auditLogService.logAction(adminId, "PAGE_APPROVE_PUBLISH", pageId, "PAGE", sourceIp);
         return published;
@@ -272,6 +279,10 @@ public class PageServiceImpl implements PageService {
             }
             if (page.getStatus() == PageStatus.ARCHIVED) {
                 throw new BadRequestException("Cannot move archived page: " + update.getPageId());
+            }
+            if (page.getStatus() == PageStatus.IN_REVIEW) {
+                throw new BadRequestException(
+                        "Page is IN_REVIEW and cannot be edited until an admin approves or rejects it");
             }
 
             String newParentId = normalizeParentId(update.getParentId());
