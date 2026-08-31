@@ -138,7 +138,8 @@ public class MfaServiceImpl {
 
         // Create ACTIVE session now
         UserSession session = userSessionService.createSession(user.getUserId(), null, null, jwtExpirationMs);
-        String jwt = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
+        java.util.Set<String> permissions = userRoleService.getPermissionsByUserId(user.getUserId());
+        String jwt = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions);
         return authMapper.toAuthResponse(user, jwt, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 }

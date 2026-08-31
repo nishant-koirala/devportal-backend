@@ -27,6 +27,9 @@ public class Role {
     @Field("description")
     private String description;
 
+    @Field("permissions")
+    private java.util.Set<String> permissions;
+
     @Field("created_at")
     private Instant createdAt;
 }

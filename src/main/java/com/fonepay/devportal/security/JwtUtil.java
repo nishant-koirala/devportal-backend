@@ -37,12 +37,15 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(User user, String sessionId, java.util.List<String> roles) {
+    public String generateToken(User user, String sessionId, java.util.List<String> roles, java.util.Set<String> permissions) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", user.getEmail());
         claims.put("sessionId", sessionId);
         if (roles != null && !roles.isEmpty()) {
             claims.put("roles", roles);
+        }
+        if (permissions != null && !permissions.isEmpty()) {
+            claims.put("permissions", permissions);
         }
         if (user.getFullName() != null) {
             claims.put("fullName", user.getFullName());
@@ -79,6 +82,11 @@ public class JwtUtil {
     @SuppressWarnings("unchecked")
     public java.util.List<String> extractRoles(String token) {
         return extractAllClaims(token).get("roles", java.util.List.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public java.util.List<String> extractPermissions(String token) {
+        return extractAllClaims(token).get("permissions", java.util.List.class);
     }
 
     public Date extractExpiration(String token) {

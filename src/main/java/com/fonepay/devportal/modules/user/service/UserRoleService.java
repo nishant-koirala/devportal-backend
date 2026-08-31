@@ -14,4 +14,6 @@ public interface UserRoleService {
      * Removes existing ADMIN/EDITOR assignments and sets exactly one staff role.
      */
     void replaceStaffRole(String userId, String roleName, String assignedBy);
+
+    java.util.Set<String> getPermissionsByUserId(String userId);
 }
