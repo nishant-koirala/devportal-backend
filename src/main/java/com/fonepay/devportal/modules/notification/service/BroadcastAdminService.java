@@ -1,4 +1,4 @@
-package com.fonepay.devportal.modules.notification.service.impl;
+package com.fonepay.devportal.modules.notification.service;
 
 import com.fonepay.devportal.common.dto.PageResponse;
 import com.fonepay.devportal.modules.notification.dto.request.BroadcastFilterRequest;

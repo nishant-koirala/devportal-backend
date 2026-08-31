@@ -25,7 +25,7 @@ import com.fonepay.devportal.modules.notification.dto.request.CreateBroadcastReq
 import com.fonepay.devportal.modules.notification.dto.request.UpdateBroadcastRequest;
 import com.fonepay.devportal.modules.notification.dto.response.BroadcastMetricsResponse;
 import com.fonepay.devportal.modules.notification.dto.response.BroadcastResponse;
-import com.fonepay.devportal.modules.notification.service.impl.BroadcastAdminService;
+import com.fonepay.devportal.modules.notification.service.BroadcastAdminService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.security.annotation.RequireAdmin;
 

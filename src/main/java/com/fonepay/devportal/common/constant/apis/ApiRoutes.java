@@ -91,4 +91,11 @@ public final class ApiRoutes {
     public static final class Department {
         public static final String BASE = API_V1 + "/departments";
     }
+
+    public static final class Profile {
+        public static final String BASE = API_V1 + "/profile";
+        public static final String PRODUCTS = BASE + "/products";
+        public static final String PRODUCT_BY_ID = "/{productId}";
+        public static final String DASHBOARD = BASE + "/dashboard";
+    }
 }

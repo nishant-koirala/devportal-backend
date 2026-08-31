@@ -61,4 +61,13 @@ public class User {
     @Field("roles")
     private List<AssignedRole> roles = new ArrayList<>();
 
+    @Field("subscribed_product_ids")
+    private List<String> subscribedProductIds = new ArrayList<>();
+
+    public List<String> getSubscribedProductIds() {
+        if (subscribedProductIds == null) {
+            subscribedProductIds = new ArrayList<>();
+        }
+        return subscribedProductIds;
+    }
 }
