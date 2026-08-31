@@ -34,6 +34,7 @@ import com.fonepay.devportal.modules.notification.enums.BroadcastTargetRole;
 import com.fonepay.devportal.modules.notification.mapper.BroadcastMapper;
 import com.fonepay.devportal.modules.notification.repository.BroadcastRepository;
 import com.fonepay.devportal.modules.notification.repository.UserBroadcastInteractionRepository;
+import com.fonepay.devportal.modules.notification.service.impl.BroadcastAdminService;
 import com.fonepay.devportal.modules.notification.service.impl.BroadcastAdminServiceImpl;
 
 @ExtendWith(MockitoExtension.class)

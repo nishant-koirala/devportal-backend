@@ -32,7 +32,7 @@ import com.fonepay.devportal.modules.notification.enums.BroadcastDisplayMode;
 import com.fonepay.devportal.modules.notification.enums.BroadcastPriority;
 import com.fonepay.devportal.modules.notification.enums.BroadcastStatus;
 import com.fonepay.devportal.modules.notification.enums.BroadcastTargetRole;
-import com.fonepay.devportal.modules.notification.service.BroadcastAdminService;
+import com.fonepay.devportal.modules.notification.service.impl.BroadcastAdminService;
 import com.fonepay.devportal.modules.user.document.User;
 
 @ExtendWith(MockitoExtension.class)

@@ -31,7 +31,6 @@ import com.fonepay.devportal.modules.notification.event.BroadcastUpdatedEvent;
 import com.fonepay.devportal.modules.notification.mapper.BroadcastMapper;
 import com.fonepay.devportal.modules.notification.repository.BroadcastRepository;
 import com.fonepay.devportal.modules.notification.repository.UserBroadcastInteractionRepository;
-import com.fonepay.devportal.modules.notification.service.BroadcastAdminService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
