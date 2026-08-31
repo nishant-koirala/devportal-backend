@@ -56,6 +56,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/editor/**")
                         .permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
+                        // Profile & Personalization endpoints
+                        .requestMatchers("/api/v1/profile/**").authenticated()
                         // Admin-only endpoints
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // CMS endpoints for Admin and Editor
