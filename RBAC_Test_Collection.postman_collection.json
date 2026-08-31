@@ -1,0 +1,168 @@
+{
+	"info": {
+		"name": "RBAC Implementation Test (With OTP)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Admin Login (Step 1: Get Pending Token)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/auth/admin/login",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "v1", "auth", "admin", "login"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Admin OTP Verify (Step 2: Get Final JWT)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <PASTE_PENDING_TOKEN_HERE>"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"code\": \"123456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/auth/admin/otp/verify",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "v1", "auth", "admin", "otp", "verify"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Test Protected Endpoint (Admin)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <PASTE_FINAL_ADMIN_JWT_HERE>"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"My RBAC Test Page\",\n  \"slug\": \"rbac-test-page\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/cms/products/prod123/pages",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "v1", "cms", "products", "prod123", "pages"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Developer Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"developer@example.com\",\n  \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/auth/login",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "v1", "auth", "login"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Developer OTP Verify (If Required)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <PASTE_PENDING_TOKEN_HERE>"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"code\": \"123456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/auth/otp/verify",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "v1", "auth", "otp", "verify"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Test Protected Endpoint (Developer - Expect 403)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <PASTE_FINAL_DEVELOPER_JWT_HERE>"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"My RBAC Test Page\",\n  \"slug\": \"rbac-test-page\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/cms/products/prod123/pages",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "v1", "cms", "products", "prod123", "pages"]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -102,12 +102,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private List<SimpleGrantedAuthority> buildAuthorities(String token) {
+        List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+        
         List<String> roles = jwtUtil.extractRoles(token);
-        if (roles == null || roles.isEmpty()) {
-            return Collections.emptyList();
+        if (roles != null && !roles.isEmpty()) {
+            roles.stream()
+                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                    .forEach(authorities::add);
         }
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .collect(java.util.stream.Collectors.toList());
+
+        List<String> permissions = jwtUtil.extractPermissions(token);
+        if (permissions != null && !permissions.isEmpty()) {
+            permissions.stream()
+                    .map(SimpleGrantedAuthority::new)
+                    .forEach(authorities::add);
+        }
+
+        return authorities;
     }
 }

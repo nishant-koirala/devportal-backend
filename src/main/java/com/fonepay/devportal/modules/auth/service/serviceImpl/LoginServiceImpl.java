@@ -108,7 +108,8 @@ public class LoginServiceImpl implements LoginService {
 
         // Non-MFA: create session and issue JWT immediately
         UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, jwtExpirationMs);
-        String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames);
+        java.util.Set<String> permissions = userRoleService.getPermissionsByUserId(user.getUserId());
+        String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions);
         activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, true);
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }

@@ -99,4 +99,22 @@ public class UserRoleServiceImpl implements UserRoleService {
                 userRepository.save(user);
                 log.info("Replaced staff role with '{}' for user '{}' by '{}'", roleName, userId, assignedBy);
         }
+
+        @Override
+        public java.util.Set<String> getPermissionsByUserId(String userId) {
+                List<String> roleNames = getRoleNamesByUserId(userId);
+                if (roleNames.isEmpty()) {
+                        return Collections.emptySet();
+                }
+                
+                java.util.Set<String> allPermissions = new java.util.HashSet<>();
+                for (String roleName : roleNames) {
+                        roleRepository.findByRoleName(roleName).ifPresent(role -> {
+                                if (role.getPermissions() != null) {
+                                        allPermissions.addAll(role.getPermissions());
+                                }
+                        });
+                }
+                return allPermissions;
+        }
 }

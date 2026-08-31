@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
@@ -50,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Cms.BASE)
-@RequireEditor
+@PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.CMS_PAGE_EDIT + "')")
 @RequiredArgsConstructor
 public class AdminPageController {
 
