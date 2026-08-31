@@ -91,4 +91,16 @@ public final class ApiRoutes {
     public static final class Department {
         public static final String BASE = API_V1 + "/departments";
     }
+
+    public static final class Profile {
+        public static final String BASE = API_V1 + "/profile";
+        public static final String BOOKMARKS = "/bookmarks";
+        public static final String BOOKMARK_BY_ID = "/bookmarks/{bookmarkId}";
+    }
+
+    public static final class Developer {
+        public static final String BASE = API_V1 + "/developer";
+        public static final String SDK_DOWNLOAD = "/sdks/{language}";
+    }
 }
+
