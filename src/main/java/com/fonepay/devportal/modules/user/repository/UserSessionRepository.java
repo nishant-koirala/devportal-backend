@@ -19,4 +19,6 @@ public interface UserSessionRepository extends MongoRepository<UserSession, Stri
     List<UserSession> findByUserIdAndIpAddressAndUserAgentAndStatus(String userId, String ipAddress, String userAgent, SessionStatus status);
 
     Optional<UserSession> findBySessionId(String sessionId);
+
+    void deleteAllByUserId(String userId);
 }
