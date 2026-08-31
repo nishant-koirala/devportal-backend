@@ -28,6 +28,9 @@ public class User {
     @Field("email")
     private String email;
 
+    @Field("pending_email")
+    private String pendingEmail;
+
     @Field("password_hash")
     private String passwordHash;
 
