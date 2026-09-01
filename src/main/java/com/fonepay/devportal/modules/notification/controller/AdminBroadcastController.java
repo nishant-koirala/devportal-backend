@@ -27,7 +27,8 @@ import com.fonepay.devportal.modules.notification.dto.response.BroadcastMetricsR
 import com.fonepay.devportal.modules.notification.dto.response.BroadcastResponse;
 import com.fonepay.devportal.modules.notification.service.BroadcastAdminService;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.fonepay.devportal.security.Permissions;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -38,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Admin.BROADCASTS)
-@RequireAdmin
+@PreAuthorize("hasAuthority('" + Permissions.SYSTEM_MANAGE + "')")
 @RequiredArgsConstructor
 public class AdminBroadcastController {
 

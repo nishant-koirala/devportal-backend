@@ -17,7 +17,6 @@ import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.exception.UnauthorizedException;
 import com.fonepay.devportal.modules.developer.service.SdkDownloadService;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.security.constant.SecurityExpressions;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Developer.BASE + "/sdks")
-@PreAuthorize(SecurityExpressions.HAS_AUTHENTICATED)
+@PreAuthorize("isAuthenticated()")
 @RequiredArgsConstructor
 public class SdkDownloadController {
 

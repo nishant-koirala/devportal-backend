@@ -24,7 +24,6 @@ import com.fonepay.devportal.modules.developer.dto.request.CreateBookmarkRequest
 import com.fonepay.devportal.modules.developer.dto.response.UserBookmarkResponse;
 import com.fonepay.devportal.modules.developer.service.UserBookmarkService;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.security.constant.SecurityExpressions;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -35,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Profile.BASE + ApiRoutes.Profile.BOOKMARKS)
-@PreAuthorize(SecurityExpressions.HAS_AUTHENTICATED)
+@PreAuthorize("isAuthenticated()")
 @RequiredArgsConstructor
 public class UserBookmarkController {
 

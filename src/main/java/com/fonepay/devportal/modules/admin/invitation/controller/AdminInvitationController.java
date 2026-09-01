@@ -18,7 +18,8 @@ import com.fonepay.devportal.modules.admin.invitation.dto.request.CreateInvitati
 import com.fonepay.devportal.modules.admin.invitation.dto.response.InvitationResponse;
 import com.fonepay.devportal.modules.admin.invitation.service.InvitationService;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.fonepay.devportal.security.Permissions;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Admin.INVITATIONS)
-@RequireAdmin
+@PreAuthorize("hasAuthority('" + Permissions.USER_INVITE + "')")
 @RequiredArgsConstructor
 public class AdminInvitationController {
 

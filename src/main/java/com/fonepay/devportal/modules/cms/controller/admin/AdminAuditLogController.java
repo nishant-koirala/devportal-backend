@@ -17,7 +17,8 @@ import com.fonepay.devportal.common.dto.PageResponse;
 import com.fonepay.devportal.modules.cms.dto.request.AuditLogSearchCriteriaDto;
 import com.fonepay.devportal.modules.cms.dto.response.AuditLogResponseDto;
 import com.fonepay.devportal.modules.cms.service.AuditLogService;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.fonepay.devportal.security.Permissions;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Admin.AUDIT_LOGS)
-@RequireAdmin
+@PreAuthorize("hasAuthority('" + Permissions.SYSTEM_MANAGE + "')")
 @RequiredArgsConstructor
 public class AdminAuditLogController {
 

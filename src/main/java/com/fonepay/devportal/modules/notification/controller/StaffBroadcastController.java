@@ -27,7 +27,7 @@ import com.fonepay.devportal.modules.notification.enums.BroadcastDisplayMode;
 import com.fonepay.devportal.modules.notification.service.BroadcastSseService;
 import com.fonepay.devportal.modules.notification.service.StaffBroadcastService;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.security.annotation.RequireEditor;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Staff.BROADCASTS)
-@RequireEditor
+@PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
 @RequiredArgsConstructor
 public class StaffBroadcastController {
 
