@@ -30,14 +30,15 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration-ms:86400000}")
+    @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(User user, String sessionId, java.util.List<String> roles, java.util.Set<String> permissions) {
+    public String generateToken(User user, String sessionId, java.util.List<String> roles,
+            java.util.Set<String> permissions) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", user.getEmail());
         claims.put("sessionId", sessionId);

@@ -98,7 +98,7 @@ public final class ApiRoutes {
         public static final String BOOKMARK_BY_ID = "/bookmarks/{bookmarkId}";
         public static final String PRODUCTS = BASE + "/products";
         public static final String PRODUCT_BY_ID = "/{productId}";
-        public static final String DASHBOARD = BASE + "/dashboard";
+        public static final String DASHBOARD = "/dashboard";
         public static final String PASSWORD = "/password";
         public static final String EMAIL_REQUEST = "/email/request";
         public static final String EMAIL_VERIFY = "/email/verify";

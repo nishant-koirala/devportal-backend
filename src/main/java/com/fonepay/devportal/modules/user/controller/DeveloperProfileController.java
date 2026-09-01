@@ -19,6 +19,8 @@ import com.fonepay.devportal.common.dto.ApiResponse;
 import com.fonepay.devportal.modules.user.dto.request.EmailChangeRequest;
 import com.fonepay.devportal.modules.user.dto.request.UpdatePasswordRequest;
 import com.fonepay.devportal.modules.user.dto.request.UpdateProfileRequest;
+import com.fonepay.devportal.modules.user.dto.response.DeveloperDashboardResponse;
+import com.fonepay.devportal.modules.user.dto.response.UserProfileResponse;
 import com.fonepay.devportal.modules.user.service.UserProfileService;
 import com.fonepay.devportal.modules.user.document.User;
 import org.springframework.security.core.Authentication;
@@ -33,6 +35,36 @@ public class DeveloperProfileController {
 
     private final UserProfileService userProfileService;
     private final Clock clock;
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(Authentication authentication) {
+        String userId = extractUserId(authentication);
+        UserProfileResponse response = userProfileService.getProfile(userId);
+
+        return ResponseEntity.ok(ApiResponse.<UserProfileResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Profile details retrieved successfully")
+                .data(response)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    @GetMapping(ApiRoutes.Profile.DASHBOARD)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<DeveloperDashboardResponse>> getDashboard(Authentication authentication) {
+        String userId = extractUserId(authentication);
+        DeveloperDashboardResponse response = userProfileService.getDashboard(userId);
+
+        return ResponseEntity.ok(ApiResponse.<DeveloperDashboardResponse>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Developer dashboard retrieved successfully")
+                .data(response)
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
 
     @PutMapping
     @PreAuthorize("isAuthenticated()")
