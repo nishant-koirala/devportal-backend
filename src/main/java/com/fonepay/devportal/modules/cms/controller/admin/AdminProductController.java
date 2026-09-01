@@ -35,7 +35,7 @@ import com.fonepay.devportal.modules.cms.dto.response.ProductResourceResponseDto
 import com.fonepay.devportal.modules.cms.dto.response.ProductResponseDto;
 import com.fonepay.devportal.modules.cms.service.ProductService;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -46,7 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Admin.PRODUCTS)
-@RequireAdmin
+@PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
 @RequiredArgsConstructor
 public class AdminProductController {
 

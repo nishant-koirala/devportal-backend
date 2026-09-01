@@ -38,8 +38,6 @@ import com.fonepay.devportal.modules.cms.service.BlockService;
 import com.fonepay.devportal.modules.cms.service.PageService;
 import com.fonepay.devportal.modules.cms.service.PublishService;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
-import com.fonepay.devportal.security.annotation.RequireEditor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -181,7 +179,7 @@ public class AdminPageController {
                         .build());
     }
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.CMS_PAGE_APPROVE + "')")
     @PostMapping(ApiRoutes.Cms.PAGE_APPROVE)
     public ResponseEntity<ApiResponse<PageMetaResponse>> approvePage(
             @PathVariable @NotBlank String pageId,
@@ -204,7 +202,7 @@ public class AdminPageController {
                         .build());
     }
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.CMS_PAGE_APPROVE + "')")
     @PostMapping(ApiRoutes.Cms.PAGE_REJECT)
     public ResponseEntity<ApiResponse<PageMetaResponse>> rejectPage(
             @PathVariable @NotBlank String pageId,
@@ -295,7 +293,7 @@ public class AdminPageController {
     }
 
     // Publish and Versioning Controller
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.CMS_PAGE_PUBLISH + "')")
     @PostMapping(ApiRoutes.Cms.PAGE_PUBLISH)
     public ResponseEntity<ApiResponse<PageMetaResponse>> publishPage(
             @PathVariable @NotBlank String pageId,

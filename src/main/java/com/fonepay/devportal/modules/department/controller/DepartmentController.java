@@ -18,7 +18,7 @@ import com.fonepay.devportal.common.dto.ApiResponse;
 import com.fonepay.devportal.modules.department.dto.request.DepartmentRequestDto;
 import com.fonepay.devportal.modules.department.dto.response.DepartmentResponseDto;
 import com.fonepay.devportal.modules.department.service.DepartmentService;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Admin.DEPARTMENTS)
-@RequireAdmin
+@PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.USER_MANAGE + "')")
 @RequiredArgsConstructor
 public class DepartmentController {
 

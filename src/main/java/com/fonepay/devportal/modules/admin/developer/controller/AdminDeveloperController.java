@@ -28,8 +28,8 @@ import com.fonepay.devportal.modules.admin.developer.dto.response.LoginHistoryRe
 import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
 import com.fonepay.devportal.modules.admin.developer.service.DeveloperAdminService;
 import com.fonepay.devportal.modules.admin.developer.service.DeveloperManagementService;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
 import com.fonepay.devportal.common.dto.PageResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @RestController
 @RequestMapping(ApiRoutes.Admin.DEVELOPERS)
-@RequireAdmin
+@PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.USER_MANAGE + "')")
 @RequiredArgsConstructor
 public class AdminDeveloperController {
 

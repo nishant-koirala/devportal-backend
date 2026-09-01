@@ -12,45 +12,45 @@ import com.fonepay.devportal.modules.cms.dto.request.UpdateProductStatusRequest;
 import com.fonepay.devportal.modules.cms.dto.response.ProductDetailResponseDto;
 import com.fonepay.devportal.modules.cms.dto.response.ProductResourceResponseDto;
 import com.fonepay.devportal.modules.cms.dto.response.ProductResponseDto;
-import com.fonepay.devportal.security.annotation.RequireAdmin;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 public interface ProductService {
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto createProduct(CreateProductRequest request, String adminId, String sourceIp);
 
     ProductDetailResponseDto getProductById(String id);
 
     ProductDetailResponseDto getProductBySlug(String slug);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto updateProduct(String id, UpdateProductRequest request, String adminId, String sourceIp);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto updateProductStatus(String id, UpdateProductStatusRequest request, String adminId, String sourceIp);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto submitForReview(String id, String userId, String sourceIp);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto approveProduct(String id, String adminId, String sourceIp);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto rejectProduct(String id, com.fonepay.devportal.modules.cms.dto.request.RejectProductRequest request, String adminId, String sourceIp);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     void deleteProduct(String id, String adminId, String sourceIp);
 
     PageResponse<ProductResponseDto> getProducts(ProductSearchCriteriaDto criteria);
 
     // Embedded ProductResource operations
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto addResource(String productId, CreateProductResourceRequest request, String adminId, String sourceIp);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto updateResource(String productId, String resourceId, UpdateProductResourceRequest request, String adminId, String sourceIp);
 
-    @RequireAdmin
+    @PreAuthorize("hasAuthority('" + com.fonepay.devportal.security.Permissions.PRODUCT_MANAGE + "')")
     ProductDetailResponseDto deleteResource(String productId, String resourceId, String adminId, String sourceIp);
 
     List<ProductResourceResponseDto> getResources(String productId);

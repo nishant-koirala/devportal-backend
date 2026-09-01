@@ -16,6 +16,7 @@ public final class Permissions {
     public static final String USER_MANAGE = "USER_MANAGE";
 
     public static final String PRODUCT_MANAGE = "PRODUCT_MANAGE";
-
     public static final String DOCUMENT_VIEW = "DOCUMENT_VIEW";
+
+    public static final String SYSTEM_MANAGE = "SYSTEM_MANAGE";
 }
