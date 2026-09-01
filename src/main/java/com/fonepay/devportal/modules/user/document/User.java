@@ -28,6 +28,9 @@ public class User {
     @Field("email")
     private String email;
 
+    @Field("pending_email")
+    private String pendingEmail;
+
     @Field("password_hash")
     private String passwordHash;
 
@@ -61,4 +64,13 @@ public class User {
     @Field("roles")
     private List<AssignedRole> roles = new ArrayList<>();
 
+    @Field("subscribed_product_ids")
+    private List<String> subscribedProductIds = new ArrayList<>();
+
+    public List<String> getSubscribedProductIds() {
+        if (subscribedProductIds == null) {
+            subscribedProductIds = new ArrayList<>();
+        }
+        return subscribedProductIds;
+    }
 }

@@ -42,6 +42,25 @@ public class EmailService {
         }
     }
 
+    public void sendEmailChangeVerification(String toEmail, String verificationUrl) {
+        log.info("Sending email change verification to: {}", toEmail);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Verify your new DevPortal email address");
+            message.setText("You requested to change your email address for DevPortal.\n\n"
+                    + "Please click the link below to verify this new email address:\n"
+                    + verificationUrl + "\n\nThis link will expire in 1 hour.");
+
+            javaMailSender.send(message);
+            log.info("Email change verification sent successfully to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send email change verification to: {}", toEmail, e);
+            throw new EmailSendException("Failed to send email", e);
+        }
+    }
+
     public void sendPasswordResetEmail(String toEmail, String resetUrl) {
         log.info("Sending password reset email to: {}", toEmail);
         try {

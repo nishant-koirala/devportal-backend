@@ -24,46 +24,47 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
-    private final JwtAuthEntryPoint jwtAuthEntryPoint;
-    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+        private final JwtAuthFilter jwtAuthFilter;
+        private final JwtAuthEntryPoint jwtAuthEntryPoint;
+        private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthEntryPoint)
-                        .accessDeniedHandler(jwtAccessDeniedHandler))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/v1/auth/login",
-                                "/api/v1/auth/register",
-                                "/api/v1/auth/verify-email",
-                                "/api/v1/auth/resend-verification",
-                                "/api/v1/auth/forgot-password",
-                                "/api/v1/auth/reset-password",
-                                "/api/v1/auth/accept-invite",
-                                "/api/v1/auth/otp/**",
-                                "/api/v1/auth/admin/**",
-                                "/api/v1/auth/editor/**")
-                        .permitAll()
-                        .requestMatchers("/api/v1/auth/logout").authenticated()
-                        // Admin-only endpoints
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        // CMS endpoints for Admin and Editor
-                        .requestMatchers("/api/v1/cms/**").hasAnyRole("ADMIN", "EDITOR")
-                        .anyRequest().permitAll())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                        .csrf(AbstractHttpConfigurer::disable)
+                        .exceptionHandling(exception -> exception
+                                        .authenticationEntryPoint(jwtAuthEntryPoint)
+                                        .accessDeniedHandler(jwtAccessDeniedHandler))
+                        .sessionManagement(session -> session
+                                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        .authorizeHttpRequests(auth -> auth
+                                        .requestMatchers(
+                                                        "/api/v1/auth/login",
+                                                        "/api/v1/auth/register",
+                                                        "/api/v1/auth/verify-email",
+                                                        "/api/v1/auth/resend-verification",
+                                                        "/api/v1/auth/forgot-password",
+                                                        "/api/v1/auth/reset-password",
+                                                        "/api/v1/auth/accept-invite",
+                                                        "/api/v1/auth/otp/**",
+                                                        "/api/v1/auth/admin/**",
+                                                        "/api/v1/auth/editor/**")
+                                        .permitAll()
+                                        .requestMatchers("/api/v1/auth/logout").authenticated()
+                                        // Profile & Personalization endpoints
+                                        .requestMatchers("/api/v1/profile/**").authenticated()
+                                        // Admin-only endpoints
+                                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                                        // CMS endpoints for Admin and Editor
+                                        .requestMatchers("/api/v1/cms/**").hasAnyRole("ADMIN", "EDITOR")
+                                        .anyRequest().permitAll())
+                        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 }
-

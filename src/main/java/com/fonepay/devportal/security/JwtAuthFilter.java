@@ -3,7 +3,6 @@ package com.fonepay.devportal.security;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
@@ -103,7 +102,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private List<SimpleGrantedAuthority> buildAuthorities(String token) {
         List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
-        
+
         List<String> roles = jwtUtil.extractRoles(token);
         if (roles != null && !roles.isEmpty()) {
             roles.stream()

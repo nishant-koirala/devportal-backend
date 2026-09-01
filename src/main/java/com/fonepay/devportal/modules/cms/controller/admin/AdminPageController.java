@@ -39,7 +39,6 @@ import com.fonepay.devportal.modules.cms.service.PageService;
 import com.fonepay.devportal.modules.cms.service.PublishService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.security.annotation.RequireAdmin;
-import com.fonepay.devportal.security.annotation.RequireEditor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

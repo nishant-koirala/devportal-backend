@@ -2,7 +2,6 @@ package com.fonepay.devportal.common.util;
 
 import org.owasp.html.HtmlPolicyBuilder;
 import org.owasp.html.PolicyFactory;
-import org.owasp.html.Sanitizers;
 
 public class HtmlSanitizerUtil {
 
