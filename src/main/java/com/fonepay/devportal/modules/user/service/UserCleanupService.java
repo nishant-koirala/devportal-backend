@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 
@@ -22,6 +23,7 @@ public class UserCleanupService {
 
     // Run every day at midnight
     @Scheduled(cron = "0 0 0 * * ?")
+    @Transactional
     public void cleanupStalePendingUsers() {
         log.info("Starting cleanup of stale unverified users...");
         Instant cutoff = Instant.now(clock).minus(24, ChronoUnit.HOURS);

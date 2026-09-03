@@ -8,8 +8,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.fonepay.devportal.modules.admin.developer.dto.response.DeveloperResponseDto;
-import com.fonepay.devportal.modules.user.document.AssignedRole;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserRole;
 
 @Mapper(componentModel = "spring")
 public interface DeveloperMapper {
@@ -27,12 +27,12 @@ public interface DeveloperMapper {
 
     List<DeveloperResponseDto> toDtoList(List<User> users);
 
-    default List<String> mapRoles(List<AssignedRole> assignedRoles) {
+    default List<String> mapRoles(List<UserRole> assignedRoles) {
         if (assignedRoles == null) {
             return Collections.emptyList();
         }
         return assignedRoles.stream()
-                .map(AssignedRole::getRoleName)
+                .map(UserRole::getRoleName)
                 .collect(Collectors.toList());
     }
 }

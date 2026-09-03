@@ -14,8 +14,8 @@ import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.modules.admin.developer.dto.request.UpdateDeveloperStatusRequest;
 import com.fonepay.devportal.modules.admin.developer.dto.response.DeveloperDetailResponse;
 import com.fonepay.devportal.modules.admin.developer.service.DeveloperAdminService;
-import com.fonepay.devportal.modules.user.document.AssignedRole;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserRole;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.service.UserSessionService;
 
@@ -83,7 +83,7 @@ public class DeveloperAdminServiceImpl implements DeveloperAdminService {
 
     private DeveloperDetailResponse toDeveloperDetailResponse(User user) {
         List<String> roleNames = user.getRoles() != null
-                ? user.getRoles().stream().map(AssignedRole::getRoleName).collect(Collectors.toList())
+                ? user.getRoles().stream().map(UserRole::getRoleName).collect(Collectors.toList())
                 : Collections.emptyList();
 
         return DeveloperDetailResponse.builder()

@@ -2,15 +2,15 @@ package com.fonepay.devportal.modules.auth.repository;
 
 import java.util.Optional;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.modules.auth.document.UserToken;
 
 @Repository
-public interface UserTokenRepository extends MongoRepository<UserToken, String> {
-    
+public interface UserTokenRepository extends JpaRepository<UserToken, String> {
+
     Optional<UserToken> findByTokenHash(String tokenHash);
 
     Optional<UserToken> findByIdAndTokenType(String id, TokenType tokenType);
@@ -23,4 +23,3 @@ public interface UserTokenRepository extends MongoRepository<UserToken, String> 
 
     void deleteByUserIdAndTokenType(String userId, TokenType tokenType);
 }
-

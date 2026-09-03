@@ -39,8 +39,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(org.springframework.dao.DuplicateKeyException.class)
     public ResponseEntity<ApiResponse<Void>> handleDuplicateKeyException(org.springframework.dao.DuplicateKeyException ex) {
-        log.warn("Duplicate Mongo key: {}", ex.getMessage());
+        log.warn("Duplicate key: {}", ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, "A resource with the same unique field already exists");
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        String detail = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        log.warn("Data integrity violation: {}", detail);
+        if (detail != null && detail.toLowerCase().contains("duplicate")) {
+            return buildResponse(HttpStatus.CONFLICT, "A resource with the same unique field already exists");
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST, "A data constraint was violated");
     }
 
     @ExceptionHandler(UnauthorizedException.class)

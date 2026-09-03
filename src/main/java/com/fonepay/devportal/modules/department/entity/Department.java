@@ -1,34 +1,40 @@
 package com.fonepay.devportal.modules.department.entity;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-
 import java.time.Instant;
 
-@Data
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "departments")
+@Entity
+@Table(name = "departments")
 public class Department {
 
     @Id
+    @Column(name = "department_id", length = 26, nullable = false)
     private String departmentId;
 
-    @Field("department_name")
-    private String departmentName; 
+    @Column(name = "department_name", nullable = false, unique = true)
+    private String departmentName;
 
-    @Field("department_description")
+    @Column(name = "department_description", length = 1000)
     private String departmentDescription;
 
-    @Field("is_active")
-    private boolean isActive; 
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive;
 
-    @Field("created_at")
-    private Instant createdAt; 
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 }

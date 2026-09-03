@@ -2,16 +2,13 @@ package com.fonepay.devportal.modules.notification.service.impl;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.common.dto.PageResponse;
@@ -32,6 +29,7 @@ import com.fonepay.devportal.modules.notification.mapper.BroadcastMapper;
 import com.fonepay.devportal.modules.notification.repository.BroadcastRepository;
 import com.fonepay.devportal.modules.notification.repository.UserBroadcastInteractionRepository;
 import com.fonepay.devportal.modules.notification.service.BroadcastAdminService;
+import com.fonepay.devportal.modules.notification.specification.BroadcastQueryBuilder;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +42,6 @@ public class BroadcastAdminServiceImpl implements BroadcastAdminService {
     private final BroadcastRepository broadcastRepository;
     private final UserBroadcastInteractionRepository interactionRepository;
     private final BroadcastMapper broadcastMapper;
-    private final MongoTemplate mongoTemplate;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
@@ -162,72 +159,26 @@ public class BroadcastAdminServiceImpl implements BroadcastAdminService {
 
     @Override
     public PageResponse<BroadcastResponse> getBroadcasts(BroadcastFilterRequest filter) {
-        Query query = new Query();
-        List<Criteria> criteriaList = new ArrayList<>();
-
-        if (filter.getSearch() != null && !filter.getSearch().isBlank()) {
-            String searchRegex = ".*" + filter.getSearch().trim() + ".*";
-            criteriaList.add(new Criteria().orOperator(
-                    Criteria.where("title").regex(searchRegex, "i"),
-                    Criteria.where("message").regex(searchRegex, "i")));
-        }
-
-        if (filter.getStatus() != null) {
-            criteriaList.add(Criteria.where("status").is(filter.getStatus()));
-        }
-
-        if (filter.getTargetRole() != null) {
-            criteriaList.add(Criteria.where("target_role").is(filter.getTargetRole()));
-        }
-
-        if (filter.getDisplayMode() != null) {
-            criteriaList.add(Criteria.where("display_modes").is(filter.getDisplayMode()));
-        }
-
-        if (filter.getPriority() != null) {
-            criteriaList.add(Criteria.where("priority").is(filter.getPriority()));
-        }
-
-        if (filter.getCategory() != null) {
-            criteriaList.add(Criteria.where("category").is(filter.getCategory()));
-        }
-
-        if (!criteriaList.isEmpty()) {
-            query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
-        }
-
-        long total = mongoTemplate.count(query, Broadcast.class);
-
         Sort.Direction direction = "ASC".equalsIgnoreCase(filter.getSortDirection())
                 ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
         String sortBy = filter.getSortBy() != null && !filter.getSortBy().isBlank()
                 ? filter.getSortBy()
                 : "createdAt";
+        if (!BroadcastQueryBuilder.allowedSortFields().contains(sortBy)) {
+            sortBy = "createdAt";
+        }
 
         int page = Math.max(0, filter.getPage());
         int size = filter.getSize() > 0 ? filter.getSize() : 20;
-
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        query.with(pageable);
 
-        List<Broadcast> list = mongoTemplate.find(query, Broadcast.class);
-        List<BroadcastResponse> mapped = list.stream()
+        Page<Broadcast> result = broadcastRepository.findAll(BroadcastQueryBuilder.fromFilter(filter), pageable);
+        List<BroadcastResponse> mapped = result.getContent().stream()
                 .map(broadcastMapper::toResponse)
                 .toList();
 
-        int totalPages = size == 0 ? 1 : (int) Math.ceil((double) total / (double) size);
-
-        return PageResponse.<BroadcastResponse>builder()
-                .content(mapped)
-                .page(page)
-                .size(size)
-                .totalElements(total)
-                .totalPages(totalPages)
-                .isFirst(page == 0)
-                .isLast(page >= totalPages - 1)
-                .isEmpty(mapped.isEmpty())
-                .build();
+        return PageResponse.of(result, mapped);
     }
 
     @Override

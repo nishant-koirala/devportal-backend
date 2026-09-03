@@ -1,35 +1,49 @@
 package com.fonepay.devportal.modules.user.document;
 
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+import java.util.HashSet;
+import java.util.Set;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "roles")
+@Entity
+@Table(name = "roles")
 public class Role {
+
     @Id
+    @Column(name = "role_id", length = 26, nullable = false)
     private String roleId;
 
-    @Indexed(unique = true)
-    @Field("role_name")
+    @Column(name = "role_name", length = 50, nullable = false, unique = true)
     private String roleName;
 
-    @Field("description")
+    @Column(name = "description", length = 500)
     private String description;
 
-    @Field("permissions")
-    private java.util.Set<String> permissions;
+    @Builder.Default
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"))
+    @Column(name = "permission", length = 100, nullable = false)
+    private Set<String> permissions = new HashSet<>();
 
-    @Field("created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }

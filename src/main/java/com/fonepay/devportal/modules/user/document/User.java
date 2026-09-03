@@ -1,76 +1,75 @@
 package com.fonepay.devportal.modules.user.document;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
-import com.fonepay.devportal.common.constant.enums.UserStatus;
-
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
+import com.fonepay.devportal.common.constant.enums.UserStatus;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "users")
+@Entity
+@Table(name = "users")
 public class User {
 
     @Id
+    @Column(name = "user_id", length = 26, nullable = false)
     private String userId;
 
-    @Indexed(unique = true)
-    @Field("email")
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Field("pending_email")
+    @Column(name = "pending_email")
     private String pendingEmail;
 
-    @Field("password_hash")
+    @Column(name = "password_hash")
     private String passwordHash;
 
-    @Field("full_name")
+    @Column(name = "full_name")
     private String fullName;
 
-    @Field("company_name")
+    @Column(name = "company_name")
     private String companyName;
 
-    @Field("status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 32, nullable = false)
     private UserStatus status;
 
-    @Field("email_verified")
+    @Column(name = "email_verified", nullable = false)
     private boolean emailVerified;
 
-    @Field("last_login_at")
+    @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
-    @Field("department_id")
+    @Column(name = "department_id", length = 26)
     private String departmentId;
 
-    @Field("deactivated_at")
+    @Column(name = "deactivated_at")
     private Instant deactivatedAt;
 
-    @Field("created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Field("updated_at")
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Field("roles")
-    private List<AssignedRole> roles = new ArrayList<>();
-
-    @Field("subscribed_product_ids")
-    private List<String> subscribedProductIds = new ArrayList<>();
-
-    public List<String> getSubscribedProductIds() {
-        if (subscribedProductIds == null) {
-            subscribedProductIds = new ArrayList<>();
-        }
-        return subscribedProductIds;
-    }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<UserRole> roles = new ArrayList<>();
 }

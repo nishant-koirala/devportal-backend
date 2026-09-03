@@ -3,13 +3,13 @@ package com.fonepay.devportal.modules.developer.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.fonepay.devportal.modules.developer.document.UserBookmark;
 
 @Repository
-public interface UserBookmarkRepository extends MongoRepository<UserBookmark, String> {
+public interface UserBookmarkRepository extends JpaRepository<UserBookmark, String> {
 
     List<UserBookmark> findByUserIdOrderByCreatedAtDesc(String userId);
 

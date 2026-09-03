@@ -4,7 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.common.exception.DuplicateResourceException;
@@ -64,7 +64,7 @@ public class UserBookmarkServiceImpl implements UserBookmarkService {
             UserBookmark saved = userBookmarkRepository.save(bookmark);
             log.info("Bookmark created with ID [{}] for user [{}]", saved.getId(), userId);
             return userBookmarkMapper.toResponse(saved);
-        } catch (DuplicateKeyException e) {
+        } catch (DataIntegrityViolationException e) {
             log.warn("Duplicate key caught when saving bookmark for user [{}]: {}", userId, e.getMessage());
             throw new DuplicateResourceException("Bookmark already exists for this page");
         }

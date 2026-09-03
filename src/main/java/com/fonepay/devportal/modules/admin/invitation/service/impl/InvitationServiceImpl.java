@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
@@ -20,8 +21,8 @@ import com.fonepay.devportal.modules.auth.service.UserTokenService;
 import com.fonepay.devportal.modules.department.entity.Department;
 import com.fonepay.devportal.modules.department.service.DepartmentService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
-import com.fonepay.devportal.modules.user.document.AssignedRole;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserRole;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.service.UserRoleService;
 
@@ -47,6 +48,7 @@ public class InvitationServiceImpl implements InvitationService {
     private String frontendUrl;
 
     @Override
+    @Transactional
     public InvitationResponse invite(CreateInvitationRequest request, String invitedByUserId) {
         String email = request.getEmail().trim().toLowerCase();
         String role = request.getRole().trim().toUpperCase();
@@ -133,7 +135,7 @@ public class InvitationServiceImpl implements InvitationService {
             return false;
         }
         return user.getRoles().stream()
-                .map(AssignedRole::getRoleName)
+                .map(UserRole::getRoleName)
                 .anyMatch(name -> "ADMIN".equalsIgnoreCase(name) || "EDITOR".equalsIgnoreCase(name));
     }
 

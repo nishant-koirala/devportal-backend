@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.exception.BadRequestException;
@@ -14,7 +15,8 @@ import com.fonepay.devportal.modules.cms.enums.ProductStatus;
 import com.fonepay.devportal.modules.cms.repository.ProductRepository;
 import com.fonepay.devportal.modules.profile.dto.response.SubscriptionResponse;
 import com.fonepay.devportal.modules.profile.service.UserSubscriptionService;
-import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserProduct;
+import com.fonepay.devportal.modules.user.repository.UserProductRepository;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,16 +28,16 @@ import lombok.extern.slf4j.Slf4j;
 public class UserSubscriptionServiceImpl implements UserSubscriptionService {
 
     private final UserRepository userRepository;
+    private final UserProductRepository userProductRepository;
     private final ProductRepository productRepository;
     private final ActivityRecordingService activityRecordingService;
     private final Clock clock;
 
     @Override
+    @Transactional
     public SubscriptionResponse subscribeProduct(String userId, String productId) {
         validateProductId(productId);
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        ensureUserExists(userId);
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
@@ -44,12 +46,12 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
             throw new BadRequestException("Cannot subscribe to unpublished product: " + product.getName());
         }
 
-        List<String> subscriptions = user.getSubscribedProductIds();
-        if (!subscriptions.contains(productId)) {
-            subscriptions.add(productId);
-            user.setUpdatedAt(clock.instant());
-            userRepository.save(user);
-
+        if (!userProductRepository.existsByUserIdAndProductId(userId, productId)) {
+            userProductRepository.save(UserProduct.builder()
+                    .userId(userId)
+                    .productId(productId)
+                    .selectedAt(clock.instant())
+                    .build());
             activityRecordingService.record(userId, ActivityType.PRODUCT_ADDED);
             log.info("User [{}] successfully subscribed to product [{}]", userId, productId);
         } else {
@@ -59,22 +61,18 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         return SubscriptionResponse.builder()
                 .productId(productId)
                 .subscribed(true)
-                .subscribedProductIds(subscriptions)
+                .subscribedProductIds(getSubscribedProductIds(userId))
                 .build();
     }
 
     @Override
+    @Transactional
     public SubscriptionResponse unsubscribeProduct(String userId, String productId) {
         validateProductId(productId);
+        ensureUserExists(userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
-
-        List<String> subscriptions = user.getSubscribedProductIds();
-        if (subscriptions.remove(productId)) {
-            user.setUpdatedAt(clock.instant());
-            userRepository.save(user);
-
+        if (userProductRepository.existsByUserIdAndProductId(userId, productId)) {
+            userProductRepository.deleteByUserIdAndProductId(userId, productId);
             activityRecordingService.record(userId, ActivityType.PRODUCT_REMOVED);
             log.info("User [{}] successfully unsubscribed from product [{}]", userId, productId);
         } else {
@@ -84,16 +82,23 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         return SubscriptionResponse.builder()
                 .productId(productId)
                 .subscribed(false)
-                .subscribedProductIds(subscriptions)
+                .subscribedProductIds(getSubscribedProductIds(userId))
                 .build();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<String> getSubscribedProductIds(String userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        ensureUserExists(userId);
+        return userProductRepository.findByUserId(userId).stream()
+                .map(UserProduct::getProductId)
+                .toList();
+    }
 
-        return user.getSubscribedProductIds();
+    private void ensureUserExists(String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found with ID: " + userId);
+        }
     }
 
     private void validateProductId(String productId) {

@@ -1,49 +1,57 @@
 package com.fonepay.devportal.modules.user.document;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+import java.time.Instant;
 
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.Instant;
-
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "user_sessions")
+@Entity
+@Table(name = "user_sessions")
 public class UserSession {
 
     @Id
+    @Column(name = "session_id", length = 26, nullable = false)
     private String sessionId;
 
-    @Field("user_id")
+    @Column(name = "user_id", length = 26, nullable = false)
     private String userId;
 
-    @Field("ip_address")
+    @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
-    @Field("user_agent")
+    @Column(name = "user_agent", length = 512)
     private String userAgent;
 
-    @Field("created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Field("last_activity_at")
+    @Column(name = "last_activity_at")
     private Instant lastActivityAt;
 
-    @Field("expires_at")
+    @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    @Field("revoked_at")
+    @Column(name = "revoked_at")
     private Instant revokedAt;
 
-    @Field("status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 32, nullable = false)
     private SessionStatus status;
 }

@@ -4,87 +4,96 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
 import com.fonepay.devportal.modules.notification.enums.BroadcastCategory;
 import com.fonepay.devportal.modules.notification.enums.BroadcastDisplayMode;
 import com.fonepay.devportal.modules.notification.enums.BroadcastPriority;
 import com.fonepay.devportal.modules.notification.enums.BroadcastStatus;
 import com.fonepay.devportal.modules.notification.enums.BroadcastTargetRole;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "cms_broadcasts")
-@CompoundIndexes({
-        @CompoundIndex(name = "status_target_starts_idx", def = "{'status': 1, 'target_role': 1, 'starts_at': -1}"),
-        @CompoundIndex(name = "status_expires_idx", def = "{'status': 1, 'expires_at': 1}")
-})
+@Entity
+@Table(name = "broadcasts")
 public class Broadcast {
 
     @Id
+    @Column(name = "id", length = 26, nullable = false)
     private String id;
 
-    @Field("title")
+    @Column(name = "title", nullable = false)
     private String title;
 
-    @Field("message")
+    @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
 
-    @Indexed
-    @Field("target_role")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_role", length = 32, nullable = false)
     private BroadcastTargetRole targetRole;
 
     @Builder.Default
-    @Field("display_modes")
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "broadcast_display_modes", joinColumns = @JoinColumn(name = "broadcast_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "display_mode", length = 32, nullable = false)
     private Set<BroadcastDisplayMode> displayModes = new HashSet<>();
 
     @Builder.Default
-    @Field("priority")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority", length = 32, nullable = false)
     private BroadcastPriority priority = BroadcastPriority.NORMAL;
 
     @Builder.Default
-    @Field("category")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", length = 32, nullable = false)
     private BroadcastCategory category = BroadcastCategory.GENERAL;
 
     @Builder.Default
-    @Field("is_dismissible")
+    @Column(name = "is_dismissible", nullable = false)
     private boolean isDismissible = true;
 
-    @Field("action_url")
+    @Column(name = "action_url", length = 2048)
     private String actionUrl;
 
-    @Field("action_label")
+    @Column(name = "action_label")
     private String actionLabel;
 
-    @Field("starts_at")
+    @Column(name = "starts_at", nullable = false)
     private Instant startsAt;
 
-    @Field("expires_at")
+    @Column(name = "expires_at")
     private Instant expiresAt;
 
-    @Indexed
     @Builder.Default
-    @Field("status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 32, nullable = false)
     private BroadcastStatus status = BroadcastStatus.ACTIVE;
 
-    @Field("created_by")
+    @Column(name = "created_by", length = 26, nullable = false, columnDefinition = "CHAR(26)")
     private String createdBy;
 
-    @Field("created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Field("updated_at")
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }

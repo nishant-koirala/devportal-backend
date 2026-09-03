@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.exception.InvalidOrExpiredTokenException;
@@ -25,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class UserTokenServiceImpl implements UserTokenService {
 
     private final UserTokenRepository tokenRepository;

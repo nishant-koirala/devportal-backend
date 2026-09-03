@@ -21,13 +21,14 @@ import com.fonepay.devportal.modules.cms.repository.ProductRepository;
 import com.fonepay.devportal.modules.developer.dto.response.UserBookmarkResponse;
 import com.fonepay.devportal.modules.developer.service.UserBookmarkService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
-import com.fonepay.devportal.modules.user.document.AssignedRole;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserRole;
 import com.fonepay.devportal.modules.user.dto.request.EmailChangeRequest;
 import com.fonepay.devportal.modules.user.dto.request.UpdatePasswordRequest;
 import com.fonepay.devportal.modules.user.dto.request.UpdateProfileRequest;
 import com.fonepay.devportal.modules.user.dto.response.DeveloperDashboardResponse;
 import com.fonepay.devportal.modules.user.dto.response.UserProfileResponse;
+import com.fonepay.devportal.modules.user.repository.UserProductRepository;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.repository.UserSessionRepository;
 import com.fonepay.devportal.modules.user.service.UserProfileService;
@@ -41,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserRepository userRepository;
+    private final UserProductRepository userProductRepository;
     private final UserSessionRepository userSessionRepository;
     private final UserTokenService userTokenService;
     private final EmailService emailService;
@@ -58,7 +60,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         User user = getUser(userId);
 
         List<String> roleNames = user.getRoles() != null
-                ? user.getRoles().stream().map(AssignedRole::getRoleName).toList()
+                ? user.getRoles().stream().map(UserRole::getRoleName).toList()
                 : Collections.emptyList();
 
         return UserProfileResponse.builder()
@@ -77,11 +79,12 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public DeveloperDashboardResponse getDashboard(String userId) {
         UserProfileResponse profile = getProfile(userId);
-        User user = getUser(userId);
 
         List<PublicProductResponseDto> subscribedProducts = Collections.emptyList();
-        List<String> subscribedProductIds = user.getSubscribedProductIds();
-        if (subscribedProductIds != null && !subscribedProductIds.isEmpty()) {
+        List<String> subscribedProductIds = userProductRepository.findByUserId(userId).stream()
+                .map(product -> product.getProductId())
+                .toList();
+        if (!subscribedProductIds.isEmpty()) {
             List<Product> products = productRepository.findAllById(subscribedProductIds);
             subscribedProducts = publicContentMapper.toPublicProductResponseDtoList(products);
         }

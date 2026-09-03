@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
@@ -20,8 +21,8 @@ import com.fonepay.devportal.modules.auth.service.InviteAcceptanceService;
 import com.fonepay.devportal.modules.auth.service.UserTokenService;
 import com.fonepay.devportal.modules.department.entity.Department;
 import com.fonepay.devportal.modules.department.repository.DepartmentRepository;
-import com.fonepay.devportal.modules.user.document.AssignedRole;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserRole;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class InviteAcceptanceServiceImpl implements InviteAcceptanceService {
     }
 
     @Override
+    @Transactional
     public RegistrationResponse acceptInvite(AcceptInviteRequest request) {
         UserToken token = userTokenService.validateToken(request.getToken(), TokenType.INVITE);
         User user = loadPendingInvitedUser(token);
@@ -91,9 +93,9 @@ public class InviteAcceptanceServiceImpl implements InviteAcceptanceService {
                 .filter(role -> "ADMIN".equalsIgnoreCase(role.getRoleName())
                         || "EDITOR".equalsIgnoreCase(role.getRoleName()))
                 .max(java.util.Comparator.comparing(
-                        AssignedRole::getAssignedAt,
+                        UserRole::getAssignedAt,
                         java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
-                .map(AssignedRole::getRoleName)
+                .map(UserRole::getRoleName)
                 .orElse(null);
     }
 

@@ -2,46 +2,42 @@ package com.fonepay.devportal.modules.developer.document;
 
 import java.time.Instant;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "user_bookmarks")
-@CompoundIndexes({
-        @CompoundIndex(name = "user_page_idx", def = "{'user_id': 1, 'page_id': 1}", unique = true, sparse = true),
-        @CompoundIndex(name = "user_page_url_idx", def = "{'user_id': 1, 'page_url': 1}", unique = true, sparse = true),
-        @CompoundIndex(name = "user_created_idx", def = "{'user_id': 1, 'created_at': -1}")
-})
+@Entity
+@Table(name = "user_bookmarks")
 public class UserBookmark {
 
     @Id
+    @Column(name = "id", length = 26, nullable = false)
     private String id;
 
-    @Indexed
-    @Field("user_id")
+    @Column(name = "user_id", length = 26, nullable = false)
     private String userId;
 
-    @Field("page_id")
+    @Column(name = "page_id", length = 26, columnDefinition = "CHAR(26)")
     private String pageId;
 
-    @Field("page_url")
+    @Column(name = "page_url", length = 2048)
     private String pageUrl;
 
-    @Field("title")
+    @Column(name = "title", length = 500)
     private String title;
 
-    @Field("created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }

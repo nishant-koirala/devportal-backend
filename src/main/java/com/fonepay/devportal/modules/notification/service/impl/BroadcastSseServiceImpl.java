@@ -17,7 +17,7 @@ import com.fonepay.devportal.modules.notification.dto.response.BroadcastResponse
 import com.fonepay.devportal.modules.notification.enums.BroadcastTargetRole;
 import com.fonepay.devportal.modules.notification.mapper.BroadcastMapper;
 import com.fonepay.devportal.modules.notification.service.BroadcastSseService;
-import com.fonepay.devportal.modules.user.document.AssignedRole;
+import com.fonepay.devportal.modules.user.document.UserRole;
 import com.fonepay.devportal.modules.user.document.User;
 
 import lombok.RequiredArgsConstructor;
@@ -184,7 +184,7 @@ public class BroadcastSseServiceImpl implements BroadcastSseService {
             return Collections.emptySet();
         }
         return user.getRoles().stream()
-                .map(AssignedRole::getRoleName)
+                .map(UserRole::getRoleName)
                 .collect(Collectors.toSet());
     }
 }

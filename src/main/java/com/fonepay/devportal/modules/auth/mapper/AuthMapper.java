@@ -11,7 +11,7 @@ import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.user.document.User;
-import com.fonepay.devportal.modules.user.document.AssignedRole;
+import com.fonepay.devportal.modules.user.document.UserRole;
 
 @Mapper(componentModel = "spring")
 public interface AuthMapper {
@@ -30,12 +30,12 @@ public interface AuthMapper {
     @Mapping(target = "expiresInSeconds", source = "expiresInSeconds")
     OtpResponse toOtpResponse(String message, int expiresInSeconds);
 
-    default List<String> mapRoles(List<AssignedRole> assignedRoles) {
+    default List<String> mapRoles(List<UserRole> assignedRoles) {
         if (assignedRoles == null) {
             return null;
         }
         return assignedRoles.stream()
-                .map(AssignedRole::getRoleName)
+                .map(UserRole::getRoleName)
                 .collect(Collectors.toList());
     }
 }

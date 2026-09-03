@@ -3,13 +3,11 @@ package com.fonepay.devportal.modules.admin.developer.service.impl;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fonepay.devportal.common.constant.DeveloperConstants;
 import com.fonepay.devportal.common.dto.PageResponse;
@@ -20,6 +18,7 @@ import com.fonepay.devportal.modules.admin.developer.mapper.DeveloperMapper;
 import com.fonepay.devportal.modules.admin.developer.service.DeveloperManagementService;
 import com.fonepay.devportal.modules.admin.developer.specification.DeveloperQueryBuilder;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,46 +28,34 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class DeveloperManagementServiceImpl implements DeveloperManagementService {
 
-    private final MongoTemplate mongoTemplate;
+    private final UserRepository userRepository;
     private final DeveloperMapper developerMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<DeveloperResponseDto> getDevelopers(DeveloperSearchCriteriaDto criteria) {
         log.info(
                 "Fetching developers list with criteria: page={}, size={}, search='{}', status={}, sortBy='{}', sortDir='{}'",
                 criteria.getPage(), criteria.getSize(), criteria.getSearch(), criteria.getStatus(),
                 criteria.getSortBy(), criteria.getSortDirection());
 
-        // Validate sorting parameters against whitelist
         validateSortCriteria(criteria.getSortBy(), criteria.getSortDirection());
 
-        // Map sort field to document field and construct Pageable
-        String mongoSortField = DeveloperConstants.SORT_FIELD_MAPPING.getOrDefault(criteria.getSortBy(), "createdAt");
+        String sortField = DeveloperConstants.SORT_FIELD_MAPPING.getOrDefault(criteria.getSortBy(), "createdAt");
         Sort.Direction direction = Sort.Direction.fromString(criteria.getSortDirection());
-        Pageable pageable = PageRequest.of(criteria.getPage(), criteria.getSize(), Sort.by(direction, mongoSortField));
+        Pageable pageable = PageRequest.of(criteria.getPage(), criteria.getSize(), Sort.by(direction, sortField));
 
-        // Build dynamic MongoDB query
-        Query query = DeveloperQueryBuilder.buildQuery(criteria);
-
-        // Calculate total elements matching the query
-        long totalElements = mongoTemplate.count(query, User.class);
-        if (totalElements == 0) {
+        Page<User> users = userRepository.findAll(DeveloperQueryBuilder.buildQuery(criteria), pageable);
+        if (users.isEmpty()) {
             log.info("No developers found matching the criteria");
             return PageResponse.empty(criteria.getPage(), criteria.getSize());
         }
 
-        // Fetch paginated documents
-        query.with(pageable);
-        List<User> users = mongoTemplate.find(query, User.class);
+        List<DeveloperResponseDto> developerDtos = developerMapper.toDtoList(users.getContent());
+        log.info("Found {} developers, returning page {} of {}", users.getTotalElements(), criteria.getPage(),
+                users.getTotalPages());
 
-        // Convert entities to DTOs
-        List<DeveloperResponseDto> developerDtos = developerMapper.toDtoList(users);
-
-        Page<DeveloperResponseDto> pageResult = new PageImpl<>(developerDtos, pageable, totalElements);
-        log.info("Found {} developers, returning page {} of {}", totalElements, criteria.getPage(),
-                pageResult.getTotalPages());
-
-        return PageResponse.of(pageResult);
+        return PageResponse.of(users, developerDtos);
     }
 
     private void validateSortCriteria(String sortBy, String sortDirection) {

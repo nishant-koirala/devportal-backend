@@ -2,44 +2,50 @@ package com.fonepay.devportal.modules.admin.developer.document;
 
 import java.time.Instant;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
 import com.fonepay.devportal.common.constant.enums.ActivityType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "activities")
-@CompoundIndex(name = "user_occurred_idx", def = "{'user_id': 1, 'occurred_at': -1}")
+@Entity
+@Table(name = "activities")
 public class Activity {
 
     @Id
+    @Column(name = "id", length = 26, nullable = false)
     private String id;
 
-    @Field("user_id")
+    @Column(name = "user_id", length = 26, nullable = false)
     private String userId;
 
-    @Field("type")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", length = 32, nullable = false)
     private ActivityType type;
 
-    @Field("occurred_at")
+    @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt;
 
-    @Field("ip_address")
+    @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
-    @Field("user_agent")
+    @Column(name = "user_agent", length = 512)
     private String userAgent;
 
-    @Field("success")
+    @Column(name = "success")
     private Boolean success;
 }
