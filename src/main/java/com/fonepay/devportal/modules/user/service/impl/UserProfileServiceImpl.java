@@ -52,7 +52,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserBookmarkService userBookmarkService;
     private final Clock clock;
 
-    @Value("${app.frontend.url}")
+    @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
 
     @Override

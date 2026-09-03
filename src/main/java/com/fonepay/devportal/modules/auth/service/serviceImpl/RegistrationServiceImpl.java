@@ -48,7 +48,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final Clock clock;
     private final ActivityRecordingService activityRecordingService;
 
-    @Value("${FRONTEND_URL}")
+    @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
 
     @Override

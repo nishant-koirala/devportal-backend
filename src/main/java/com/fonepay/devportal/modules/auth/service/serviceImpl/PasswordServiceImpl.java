@@ -43,7 +43,7 @@ public class PasswordServiceImpl implements PasswordService {
     private final ActivityRecordingService activityRecordingService;
     private final RateLimitService rateLimitService;
 
-    @Value("${FRONTEND_URL}")
+    @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
 
     @Override

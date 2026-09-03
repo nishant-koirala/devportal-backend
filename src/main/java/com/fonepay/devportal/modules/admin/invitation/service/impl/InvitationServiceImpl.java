@@ -44,7 +44,7 @@ public class InvitationServiceImpl implements InvitationService {
     private final EmailService emailService;
     private final Clock clock;
 
-    @Value("${FRONTEND_URL}")
+    @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
 
     @Override
