@@ -26,9 +26,27 @@ import java.util.stream.Collectors;
 public class BlockServiceImpl implements BlockService {
 
     private final PageRepository pageRepository;
+    private static final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+    private com.fonepay.devportal.modules.cms.document.BlockData mapToBlockData(BlockType type, java.util.Map<String, Object> data) {
+        if (data == null) return null;
+        Class<? extends com.fonepay.devportal.modules.cms.document.BlockData> dataClass = switch (type) {
+            case HEADING -> com.fonepay.devportal.modules.cms.document.HeadingBlockData.class;
+            case PARAGRAPH -> com.fonepay.devportal.modules.cms.document.ParagraphBlockData.class;
+            case CODE -> com.fonepay.devportal.modules.cms.document.CodeBlockData.class;
+            case ENDPOINT -> com.fonepay.devportal.modules.cms.document.EndpointBlockData.class;
+            case FAQ -> com.fonepay.devportal.modules.cms.document.FaqBlockData.class;
+            case TABLE -> com.fonepay.devportal.modules.cms.document.TableBlockData.class;
+            case IMAGE -> com.fonepay.devportal.modules.cms.document.ImageBlockData.class;
+            case NOTE_WARNING -> com.fonepay.devportal.modules.cms.document.NoteWarningBlockData.class;
+            case PARAMETER_TABLE -> com.fonepay.devportal.modules.cms.document.ParameterTableBlockData.class;
+            case TEST_CREDENTIAL -> com.fonepay.devportal.modules.cms.document.TestCredentialBlockData.class;
+        };
+        return objectMapper.convertValue(data, dataClass);
+    }
 
     @Override
-    public Block addBlock(String pageId, BlockType type, BlockData data, Integer specificOrder) {
+    public Block addBlock(String pageId, BlockType type, java.util.Map<String, Object> data, Integer specificOrder) {
         Page page = requireEditablePage(pageId);
 
         List<Block> draftBlocks = page.getDraftBlocks();
@@ -51,15 +69,16 @@ public class BlockServiceImpl implements BlockService {
                     .orElse(0) + 1;
         }
 
+        com.fonepay.devportal.modules.cms.document.BlockData parsedData = mapToBlockData(type, data);
+
         Block newBlock = new Block(
                 UUID.randomUUID().toString(),
                 type,
                 newOrder,
-                0L,
-                data
+                parsedData
         );
 
-        data.sanitize();
+        if (parsedData != null) parsedData.sanitize();
 
         draftBlocks.add(newBlock);
         
@@ -72,10 +91,18 @@ public class BlockServiceImpl implements BlockService {
     }
 
     @Override
-    public boolean updateBlockData(String pageId, String blockId, BlockData data, long currentVersion) {
-        requireEditablePage(pageId);
-        data.sanitize();
-        boolean success = pageRepository.updateDraftBlock(pageId, blockId, data, currentVersion);
+    public boolean updateBlockData(String pageId, String blockId, java.util.Map<String, Object> data, long currentVersion) {
+        Page page = requireEditablePage(pageId);
+        
+        Block targetBlock = page.getDraftBlocks().stream()
+                .filter(b -> b.getId().equals(blockId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Block not found with id: " + blockId));
+                
+        com.fonepay.devportal.modules.cms.document.BlockData parsedData = mapToBlockData(targetBlock.getType(), data);
+        if (parsedData != null) parsedData.sanitize();
+        
+        boolean success = pageRepository.updateDraftBlock(pageId, blockId, parsedData, currentVersion);
         if (!success) {
             throw new ConcurrentUpdateException("The block has been modified by another user. Please refresh and try again.");
         }

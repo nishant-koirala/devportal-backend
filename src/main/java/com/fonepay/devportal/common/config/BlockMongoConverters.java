@@ -53,9 +53,6 @@ public final class BlockMongoConverters {
             Integer order = source.getInteger("order");
             block.setOrder(order != null ? order : 0);
 
-            Number blockVersion = source.get("block_version", Number.class);
-            block.setBlockVersion(blockVersion != null ? blockVersion.longValue() : 0L);
-
             Object data = source.get("data");
             if (data != null && type != null) {
                 block.setData(MAPPER.convertValue(data, classFor(type)));
@@ -74,7 +71,6 @@ public final class BlockMongoConverters {
                 document.put("type", source.getType().name());
             }
             document.put("order", source.getOrder());
-            document.put("block_version", source.getBlockVersion());
             if (source.getData() != null) {
                 Map<String, Object> data = MAPPER.convertValue(source.getData(), new TypeReference<>() {
                 });

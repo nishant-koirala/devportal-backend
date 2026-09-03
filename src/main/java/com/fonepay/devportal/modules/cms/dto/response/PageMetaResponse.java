@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class PageMetaResponse {
 
     private String id;
+    private Long version;
     private String productId;
     private String parentId;
     private int pageOrder;

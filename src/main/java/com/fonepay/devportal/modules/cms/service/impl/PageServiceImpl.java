@@ -19,9 +19,12 @@ import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.common.exception.DuplicateResourceException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
 import com.fonepay.devportal.common.util.IdGenerator;
+import com.fonepay.devportal.modules.cms.document.Block;
 import com.fonepay.devportal.modules.cms.document.Page;
 import com.fonepay.devportal.modules.cms.document.Product;
 import com.fonepay.devportal.modules.cms.dto.request.CreatePageRequest;
+import com.fonepay.devportal.modules.cms.dto.request.BlockDto;
+import com.fonepay.devportal.modules.cms.dto.request.BulkPageSaveRequest;
 import com.fonepay.devportal.modules.cms.dto.request.PageHierarchyUpdateDto;
 import com.fonepay.devportal.modules.cms.dto.request.PublishPageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.RejectPageRequest;
@@ -52,6 +55,7 @@ public class PageServiceImpl implements PageService {
     private final AuditLogService auditLogService;
     private final PublishService publishService;
     private final Clock clock;
+    private static final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     @Override
     public PageMetaResponse createPage(String productId, CreatePageRequest request, String createdBy) {
@@ -86,6 +90,36 @@ public class PageServiceImpl implements PageService {
         page.setCreatedAt(now);
         page.setUpdatedAt(now);
         page.setCreatedBy(createdBy);
+
+        if (request.getDraftBlocks() != null && !request.getDraftBlocks().isEmpty()) {
+            List<Block> draftBlocks = new ArrayList<>();
+            for (BlockDto dto : request.getDraftBlocks()) {
+                Block block = new Block();
+                block.setId(dto.getId() != null && !dto.getId().isBlank() ? dto.getId() : IdGenerator.nextUlid());
+                block.setType(dto.getType());
+                block.setOrder(dto.getOrder());
+                if (dto.getData() != null) {
+                    Class<? extends com.fonepay.devportal.modules.cms.document.BlockData> dataClass = switch (dto.getType()) {
+                        case HEADING -> com.fonepay.devportal.modules.cms.document.HeadingBlockData.class;
+                        case PARAGRAPH -> com.fonepay.devportal.modules.cms.document.ParagraphBlockData.class;
+                        case CODE -> com.fonepay.devportal.modules.cms.document.CodeBlockData.class;
+                        case ENDPOINT -> com.fonepay.devportal.modules.cms.document.EndpointBlockData.class;
+                        case FAQ -> com.fonepay.devportal.modules.cms.document.FaqBlockData.class;
+                        case TABLE -> com.fonepay.devportal.modules.cms.document.TableBlockData.class;
+                        case IMAGE -> com.fonepay.devportal.modules.cms.document.ImageBlockData.class;
+                        case NOTE_WARNING -> com.fonepay.devportal.modules.cms.document.NoteWarningBlockData.class;
+                        case PARAMETER_TABLE -> com.fonepay.devportal.modules.cms.document.ParameterTableBlockData.class;
+                        case TEST_CREDENTIAL -> com.fonepay.devportal.modules.cms.document.TestCredentialBlockData.class;
+                    };
+                    com.fonepay.devportal.modules.cms.document.BlockData parsedData = objectMapper.convertValue(dto.getData(), dataClass);
+                    parsedData.sanitize();
+                    block.setData(parsedData);
+                }
+                draftBlocks.add(block);
+            }
+            draftBlocks.sort(java.util.Comparator.comparingInt(Block::getOrder));
+            page.setDraftBlocks(draftBlocks);
+        }
 
         try {
             Page saved = pageRepository.save(page);
@@ -134,6 +168,73 @@ public class PageServiceImpl implements PageService {
         try {
             Page saved = pageRepository.save(page);
             log.info("Updated page {}", pageId);
+            return pageMapper.toMetaResponse(saved);
+        } catch (DuplicateKeyException ex) {
+            throw new DuplicateResourceException(
+                    "A page with slug '" + request.getSlug() + "' already exists for this product");
+        }
+    }
+
+    @Override
+    public PageMetaResponse bulkSavePage(String pageId, BulkPageSaveRequest request) {
+        Page page = requirePage(pageId);
+        if (page.getStatus() == PageStatus.ARCHIVED) {
+            throw new BadRequestException("Cannot update an archived page");
+        }
+        if (page.getStatus() == PageStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Page is IN_REVIEW and cannot be edited until an admin approves or rejects it");
+        }
+
+        page.setVersion(request.getVersion());
+
+        if (!isBlank(request.getSlug()) && !request.getSlug().equals(page.getSlug())) {
+            if (pageRepository.existsByProductIdAndSlugAndIdNot(page.getProductId(), request.getSlug(), pageId)) {
+                throw new DuplicateResourceException(
+                        "A page with slug '" + request.getSlug() + "' already exists for this product");
+            }
+            page.setSlug(request.getSlug());
+        }
+
+        if (!isBlank(request.getTitle())) {
+            page.setTitle(request.getTitle().trim());
+        }
+
+        page.setUpdatedAt(clock.instant());
+
+        List<Block> draftBlocks = new ArrayList<>();
+        if (request.getDraftBlocks() != null) {
+            for (BlockDto dto : request.getDraftBlocks()) {
+                Block block = new Block();
+                block.setId(dto.getId() != null && !dto.getId().isBlank() ? dto.getId() : IdGenerator.nextUlid());
+                block.setType(dto.getType());
+                block.setOrder(dto.getOrder());
+                if (dto.getData() != null) {
+                    Class<? extends com.fonepay.devportal.modules.cms.document.BlockData> dataClass = switch (dto.getType()) {
+                        case HEADING -> com.fonepay.devportal.modules.cms.document.HeadingBlockData.class;
+                        case PARAGRAPH -> com.fonepay.devportal.modules.cms.document.ParagraphBlockData.class;
+                        case CODE -> com.fonepay.devportal.modules.cms.document.CodeBlockData.class;
+                        case ENDPOINT -> com.fonepay.devportal.modules.cms.document.EndpointBlockData.class;
+                        case FAQ -> com.fonepay.devportal.modules.cms.document.FaqBlockData.class;
+                        case TABLE -> com.fonepay.devportal.modules.cms.document.TableBlockData.class;
+                        case IMAGE -> com.fonepay.devportal.modules.cms.document.ImageBlockData.class;
+                        case NOTE_WARNING -> com.fonepay.devportal.modules.cms.document.NoteWarningBlockData.class;
+                        case PARAMETER_TABLE -> com.fonepay.devportal.modules.cms.document.ParameterTableBlockData.class;
+                        case TEST_CREDENTIAL -> com.fonepay.devportal.modules.cms.document.TestCredentialBlockData.class;
+                    };
+                    com.fonepay.devportal.modules.cms.document.BlockData parsedData = objectMapper.convertValue(dto.getData(), dataClass);
+                    parsedData.sanitize();
+                    block.setData(parsedData);
+                }
+                draftBlocks.add(block);
+            }
+            draftBlocks.sort(java.util.Comparator.comparingInt(Block::getOrder));
+        }
+        page.setDraftBlocks(draftBlocks);
+
+        try {
+            Page saved = pageRepository.save(page);
+            log.info("Bulk saved page {}", pageId);
             return pageMapper.toMetaResponse(saved);
         } catch (DuplicateKeyException ex) {
             throw new DuplicateResourceException(

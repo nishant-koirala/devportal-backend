@@ -38,7 +38,7 @@ public class UpdateProductRequest {
     private ProductStatus status;
 
     @Min(value = 0, message = "Display order must be a non-negative integer")
-    private int displayOrder;
+    private Integer displayOrder;
 
     private Long version;
 }

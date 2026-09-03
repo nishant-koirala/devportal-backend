@@ -3,6 +3,7 @@ package com.fonepay.devportal.modules.cms.service;
 import java.util.List;
 
 import com.fonepay.devportal.modules.cms.dto.request.CreatePageRequest;
+import com.fonepay.devportal.modules.cms.dto.request.BulkPageSaveRequest;
 import com.fonepay.devportal.modules.cms.dto.request.PageHierarchyUpdateDto;
 import com.fonepay.devportal.modules.cms.dto.request.RejectPageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.UpdatePageRequest;
@@ -16,6 +17,8 @@ public interface PageService {
     PageMetaResponse getPage(String pageId);
 
     PageMetaResponse updatePage(String pageId, UpdatePageRequest request);
+
+    PageMetaResponse bulkSavePage(String pageId, BulkPageSaveRequest request);
 
     PageMetaResponse archivePage(String pageId);
 
