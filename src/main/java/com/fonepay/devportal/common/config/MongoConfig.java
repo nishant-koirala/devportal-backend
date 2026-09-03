@@ -21,7 +21,10 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 
 @Configuration
 @EnableMongoAuditing
-@EnableMongoRepositories(basePackages = "com.fonepay.devportal.modules.cms.repository")
+@EnableMongoRepositories(basePackages = {
+        "com.fonepay.devportal.modules.cms.repository",
+        "com.fonepay.devportal.modules.product.repository"
+})
 public class MongoConfig {
 
         @Value("${spring.data.mongodb.uri}")
