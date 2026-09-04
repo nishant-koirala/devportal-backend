@@ -35,5 +35,6 @@ public class TestCredentialBlockData implements BlockData {
         private String key;
         private String value;
         private String description;
+        private boolean isSensitive;
     }
 }

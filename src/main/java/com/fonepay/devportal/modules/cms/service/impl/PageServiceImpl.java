@@ -47,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PageServiceImpl implements PageService {
 
-    private static final int MAX_TREE_DEPTH = 3;
+    private static final int MAX_TREE_DEPTH = 2;
 
     private final PageRepository pageRepository;
     private final MongoTemplate mongoTemplate;
@@ -82,7 +82,9 @@ public class PageServiceImpl implements PageService {
         Page page = new Page();
         page.setId(IdGenerator.nextUlid());
         page.setProductId(productId);
+        page.setSectionId(request.getSectionId());
         page.setParentId(parentId);
+        page.setType(request.getType());
         page.setPageOrder(nextPageOrder(productId, parentId));
         page.setTitle(request.getTitle().trim());
         page.setSlug(request.getSlug());

@@ -1,6 +1,7 @@
 package com.fonepay.devportal.modules.cms.document;
 
 import com.fonepay.devportal.modules.cms.enums.PageStatus;
+import com.fonepay.devportal.modules.cms.enums.PageType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -38,6 +39,10 @@ public class Page {
     private String productId;
 
     @Indexed
+    @Field("section_id")
+    private String sectionId;
+
+    @Indexed
     @Field("parent_id")
     private String parentId;
 
@@ -52,6 +57,9 @@ public class Page {
 
     @Field("status")
     private PageStatus status;
+
+    @Field("type")
+    private PageType type;
 
     @Field("draft_blocks")
     private List<Block> draftBlocks = new ArrayList<>();
