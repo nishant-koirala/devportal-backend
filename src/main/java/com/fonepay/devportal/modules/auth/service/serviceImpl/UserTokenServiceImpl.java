@@ -192,4 +192,10 @@ public class UserTokenServiceImpl implements UserTokenService {
         tokenRepository.deleteByUserId(userId);
         log.info("Deleted all tokens for userId: {}", userId);
     }
+
+    @Override
+    public void deleteUnusedTokensForUser(String userId, TokenType tokenType) {
+        tokenRepository.deleteByUserIdAndTokenTypeAndUsedAtIsNull(userId, tokenType);
+        log.info("Deleted unused {} tokens for userId: {}", tokenType, userId);
+    }
 }

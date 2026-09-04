@@ -14,9 +14,11 @@ public interface UserProfileService {
 
     void updateProfile(String userId, UpdateProfileRequest request);
 
-    void updatePassword(String userId, UpdatePasswordRequest request);
+    void updatePassword(String userId, UpdatePasswordRequest request, String currentSessionId);
 
     void requestEmailChange(String userId, EmailChangeRequest request);
 
     void verifyEmailChange(String token);
+
+    void cancelEmailChange(String userId);
 }

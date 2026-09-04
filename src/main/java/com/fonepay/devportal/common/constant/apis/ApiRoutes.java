@@ -102,6 +102,7 @@ public final class ApiRoutes {
         public static final String PASSWORD = "/password";
         public static final String EMAIL_REQUEST = "/email/request";
         public static final String EMAIL_VERIFY = "/email/verify";
+        public static final String EMAIL_CHANGE_CANCEL = "/email-change/cancel";
     }
 
     public static final class Developer {

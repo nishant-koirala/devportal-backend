@@ -1,6 +1,7 @@
 package com.fonepay.devportal.modules.user.service.impl;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +31,8 @@ import com.fonepay.devportal.modules.user.dto.response.DeveloperDashboardRespons
 import com.fonepay.devportal.modules.user.dto.response.UserProfileResponse;
 import com.fonepay.devportal.modules.user.repository.UserProductRepository;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
-import com.fonepay.devportal.modules.user.repository.UserSessionRepository;
 import com.fonepay.devportal.modules.user.service.UserProfileService;
+import com.fonepay.devportal.modules.user.service.UserSessionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserRepository userRepository;
     private final UserProductRepository userProductRepository;
-    private final UserSessionRepository userSessionRepository;
+    private final UserSessionService userSessionService;
     private final UserTokenService userTokenService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -54,6 +55,9 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
+
+    @Value("${app.verify.token.ttl:24h}")
+    private Duration verifyTokenTtl;
 
     @Override
     public UserProfileResponse getProfile(String userId) {
@@ -113,7 +117,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
-    public void updatePassword(String userId, UpdatePasswordRequest request) {
+    public void updatePassword(String userId, UpdatePasswordRequest request, String currentSessionId) {
         User user = getUser(userId);
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
@@ -124,10 +128,9 @@ public class UserProfileServiceImpl implements UserProfileService {
         user.setUpdatedAt(Instant.now(clock));
         userRepository.save(user);
 
-        // Invalidate all active sessions
-        userSessionRepository.deleteAllByUserId(userId);
+        userSessionService.revokeAllActiveSessionsExcept(userId, currentSessionId);
 
-        log.info("User {} updated password and all active sessions were invalidated.", userId);
+        log.info("User {} updated password; other sessions revoked, current session kept.", userId);
     }
 
     @Override
@@ -148,7 +151,8 @@ public class UserProfileServiceImpl implements UserProfileService {
         userRepository.save(user);
 
         // Generate verification token
-        String rawToken = userTokenService.createAndSaveToken(userId, TokenType.EMAIL_CHANGE, 1); // 1 hour expiry
+        String rawToken = userTokenService.createAndSaveToken(
+                userId, TokenType.EMAIL_CHANGE, verifyTokenTtl.toHours());
 
         String verificationUrl = frontendUrl + "/profile/email-verify?token=" + rawToken;
         emailService.sendEmailChangeVerification(newEmail, verificationUrl);
@@ -181,6 +185,16 @@ public class UserProfileServiceImpl implements UserProfileService {
         userTokenService.consumeToken(userToken);
 
         log.info("User {} successfully changed email from {} to {}", user.getUserId(), oldEmail, user.getEmail());
+    }
+
+    @Override
+    public void cancelEmailChange(String userId) {
+        User user = getUser(userId);
+        user.setPendingEmail(null);
+        user.setUpdatedAt(Instant.now(clock));
+        userRepository.save(user);
+        userTokenService.deleteUnusedTokensForUser(userId, TokenType.EMAIL_CHANGE);
+        log.info("User {} cancelled pending email change", userId);
     }
 
     private User getUser(String userId) {

@@ -71,7 +71,15 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         validateProductId(productId);
         ensureUserExists(userId);
 
-        if (userProductRepository.existsByUserIdAndProductId(userId, productId)) {
+        List<UserProduct> subscribed = userProductRepository.findByUserId(userId);
+        boolean removingSubscribedProduct = subscribed.stream()
+                .anyMatch(product -> productId.equals(product.getProductId()));
+
+        if (removingSubscribedProduct && subscribed.size() == 1) {
+            throw new BadRequestException("You must keep at least one product");
+        }
+
+        if (removingSubscribedProduct) {
             userProductRepository.deleteByUserIdAndProductId(userId, productId);
             activityRecordingService.record(userId, ActivityType.PRODUCT_REMOVED);
             log.info("User [{}] successfully unsubscribed from product [{}]", userId, productId);

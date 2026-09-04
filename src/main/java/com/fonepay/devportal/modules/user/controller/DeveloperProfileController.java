@@ -3,6 +3,7 @@ package com.fonepay.devportal.modules.user.controller;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +25,7 @@ import com.fonepay.devportal.modules.user.dto.response.DeveloperDashboardRespons
 import com.fonepay.devportal.modules.user.dto.response.UserProfileResponse;
 import com.fonepay.devportal.modules.user.service.UserProfileService;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.security.JwtUtil;
 import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
@@ -34,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 public class DeveloperProfileController {
 
     private final UserProfileService userProfileService;
+    private final JwtUtil jwtUtil;
     private final Clock clock;
 
     @GetMapping
@@ -87,15 +91,16 @@ public class DeveloperProfileController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
             Authentication authentication,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @Valid @RequestBody UpdatePasswordRequest request) {
         
         String userId = extractUserId(authentication);
-        userProfileService.updatePassword(userId, request);
+        userProfileService.updatePassword(userId, request, extractSessionId(authHeader));
         
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .status(HttpStatus.OK.value())
                 .success(true)
-                .message("Password updated successfully. You have been logged out of all devices.")
+                .message("Password updated successfully. Other devices have been signed out.")
                 .timestamp(LocalDateTime.now(clock))
                 .build());
     }
@@ -129,6 +134,27 @@ public class DeveloperProfileController {
                 .message("Email address successfully changed.")
                 .timestamp(LocalDateTime.now(clock))
                 .build());
+    }
+
+    @PostMapping(ApiRoutes.Profile.EMAIL_CHANGE_CANCEL)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> cancelEmailChange(Authentication authentication) {
+        String userId = extractUserId(authentication);
+        userProfileService.cancelEmailChange(userId);
+
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .status(HttpStatus.OK.value())
+                .success(true)
+                .message("Pending email change cancelled.")
+                .timestamp(LocalDateTime.now(clock))
+                .build());
+    }
+
+    private String extractSessionId(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        return jwtUtil.extractSessionId(authHeader.substring(7));
     }
 
     private String extractUserId(Authentication authentication) {

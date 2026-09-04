@@ -12,5 +12,7 @@ public interface UserSessionService {
 
     void revokeAllActiveSessions(String userId);
 
+    void revokeAllActiveSessionsExcept(String userId, String currentSessionId);
+
     Optional<UserSession> getActiveSession(String sessionId);
 }

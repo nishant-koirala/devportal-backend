@@ -91,6 +91,24 @@ public class UserSessionServiceImpl implements UserSessionService {
     }
 
     @Override
+    public void revokeAllActiveSessionsExcept(String userId, String currentSessionId) {
+        Instant now = clock.instant();
+        List<UserSession> toRevoke = userSessionRepository.findByUserIdAndStatus(userId, SessionStatus.ACTIVE)
+                .stream()
+                .filter(session -> currentSessionId == null || !currentSessionId.equals(session.getSessionId()))
+                .toList();
+        if (!toRevoke.isEmpty()) {
+            toRevoke.forEach(session -> {
+                session.setStatus(SessionStatus.REVOKED);
+                session.setRevokedAt(now);
+            });
+            userSessionRepository.saveAll(toRevoke);
+            log.info("Revoked {} other active session(s) for user: {} (kept {})",
+                    toRevoke.size(), userId, currentSessionId);
+        }
+    }
+
+    @Override
     public Optional<UserSession> getActiveSession(String sessionId) {
         return userSessionRepository.findBySessionId(sessionId)
                 .filter(s -> s.getStatus() == SessionStatus.ACTIVE && s.getExpiresAt().isAfter(clock.instant()));

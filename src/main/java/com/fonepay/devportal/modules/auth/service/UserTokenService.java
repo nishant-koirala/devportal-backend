@@ -24,5 +24,7 @@ public interface UserTokenService {
     void deleteToken(UserToken token);
 
     void deleteAllTokensForUser(String userId);
+
+    void deleteUnusedTokensForUser(String userId, TokenType tokenType);
 }
 
