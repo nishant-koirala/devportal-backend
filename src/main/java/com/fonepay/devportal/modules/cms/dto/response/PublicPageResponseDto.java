@@ -23,4 +23,5 @@ public class PublicPageResponseDto {
     private String slug;
     private List<Block> publishedBlocks;
     private Instant lastPublishedAt;
+    private boolean isAddPrompt;
 }

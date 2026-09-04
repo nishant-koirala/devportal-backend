@@ -15,6 +15,10 @@ import com.fonepay.devportal.modules.cms.repository.PageRepository;
 import com.fonepay.devportal.modules.cms.repository.ProductRepository;
 import com.fonepay.devportal.modules.cms.service.PublicPageService;
 
+import java.util.Collections;
+import com.fonepay.devportal.modules.user.repository.UserProductRepository;
+import com.fonepay.devportal.modules.cms.service.PageViewService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,9 +32,11 @@ public class PublicPageServiceImpl implements PublicPageService {
     private final ProductRepository productRepository;
     private final PageRepository pageRepository;
     private final PublicContentMapper publicContentMapper;
+    private final UserProductRepository userProductRepository;
+    private final PageViewService pageViewService;
 
     @Override
-    public PublicPageResponseDto getPublishedPage(String productSlug, String pageSlug) {
+    public PublicPageResponseDto getPublishedPage(String productSlug, String pageSlug, String developerId) {
         validateSlug(productSlug, "Product slug");
         validateSlug(pageSlug, "Page slug");
 
@@ -42,8 +48,18 @@ public class PublicPageServiceImpl implements PublicPageService {
         Page page = pageRepository.findPublishedByProductIdAndSlugExcludingDrafts(product.getId(), pageSlug.trim().toLowerCase())
                 .orElseThrow(() -> new ResourceNotFoundException("Published page not found with slug '" + pageSlug + "' under product '" + productSlug + "'"));
 
-        // Map to PublicPageResponseDto which contains publishedBlocks only
-        return publicContentMapper.toPublicPageResponseDto(page);
+        PublicPageResponseDto response = publicContentMapper.toPublicPageResponseDto(page);
+
+        // Zero-Trust Payload Stripping
+        if (developerId == null || !userProductRepository.existsByUserIdAndProductId(developerId, product.getId())) {
+            response.setPublishedBlocks(Collections.emptyList());
+            response.setAddPrompt(true);
+        } else {
+            // Sequence Diagram D3 Integration: Record page view for subscribed developer
+            pageViewService.recordView(developerId, page.getId());
+        }
+
+        return response;
     }
 
     private void validateSlug(String slug, String fieldName) {

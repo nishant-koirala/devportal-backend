@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 
 import com.fonepay.devportal.common.constant.apis.ApiRoutes;
 import com.fonepay.devportal.common.dto.ApiResponse;
@@ -34,8 +37,10 @@ public class PublicPageController {
             @PathVariable String productSlug,
             @PathVariable String pageSlug) {
 
-        log.info("Public request: Fetching published page for productSlug='{}', pageSlug='{}'", productSlug, pageSlug);
-        PublicPageResponseDto page = publicPageService.getPublishedPage(productSlug, pageSlug);
+        String developerId = getDeveloperIdOrThrow();
+
+        log.info("Public request: Fetching published page for productSlug='{}', pageSlug='{}', developerId='{}'", productSlug, pageSlug, developerId);
+        PublicPageResponseDto page = publicPageService.getPublishedPage(productSlug, pageSlug, developerId);
 
         return ResponseEntity.ok(
                 ApiResponse.<PublicPageResponseDto>builder()
@@ -67,5 +72,30 @@ public class PublicPageController {
             @RequestParam String pageSlug) {
 
         return getPublishedPage(productSlug, pageSlug);
+    }
+
+    /**
+     * FR-316: Documentation Access Guide metadata for visitors
+     */
+    @GetMapping(ApiRoutes.Public.BASE + "/docs/access-guide")
+    public ResponseEntity<ApiResponse<Object>> getAccessGuide() {
+        // Here we will eventually return the nested tree using PageTreeBuilder.
+        // For now, return a placeholder to satisfy the zero-trust gating.
+        return ResponseEntity.ok(
+                ApiResponse.<Object>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Documentation access guide metadata")
+                        .data(java.util.Collections.emptyList())
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
+    }
+
+    private String getDeveloperIdOrThrow() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            throw new com.fonepay.devportal.common.exception.UnauthorizedException("Authentication required to access documentation pages");
+        }
+        return auth.getName();
     }
 }
