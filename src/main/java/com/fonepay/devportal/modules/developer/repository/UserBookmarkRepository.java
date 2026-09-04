@@ -24,4 +24,6 @@ public interface UserBookmarkRepository extends JpaRepository<UserBookmark, Stri
     boolean existsByUserIdAndPageUrl(String userId, String pageUrl);
 
     void deleteByIdAndUserId(String id, String userId);
+
+    void deleteByPageId(String pageId);
 }

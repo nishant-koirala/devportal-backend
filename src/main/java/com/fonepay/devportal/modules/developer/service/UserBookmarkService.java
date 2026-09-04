@@ -12,4 +12,6 @@ public interface UserBookmarkService {
     List<UserBookmarkResponse> getUserBookmarks(String userId);
 
     void deleteBookmark(String userId, String bookmarkId);
+
+    void deleteBookmarksByPageId(String pageId);
 }

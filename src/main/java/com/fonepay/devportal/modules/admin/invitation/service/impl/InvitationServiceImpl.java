@@ -18,8 +18,6 @@ import com.fonepay.devportal.modules.admin.invitation.dto.request.CreateInvitati
 import com.fonepay.devportal.modules.admin.invitation.dto.response.InvitationResponse;
 import com.fonepay.devportal.modules.admin.invitation.service.InvitationService;
 import com.fonepay.devportal.modules.auth.service.UserTokenService;
-import com.fonepay.devportal.modules.department.entity.Department;
-import com.fonepay.devportal.modules.department.service.DepartmentService;
 import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.document.UserRole;
@@ -40,7 +38,6 @@ public class InvitationServiceImpl implements InvitationService {
     private final UserRepository userRepository;
     private final UserRoleService userRoleService;
     private final UserTokenService userTokenService;
-    private final DepartmentService departmentService;
     private final EmailService emailService;
     private final Clock clock;
 
@@ -53,12 +50,11 @@ public class InvitationServiceImpl implements InvitationService {
         String email = request.getEmail().trim().toLowerCase();
         String role = request.getRole().trim().toUpperCase();
         String fullName = trimToNull(request.getFullName());
-
-        Department department = departmentService.requireActiveDepartment(request.getDepartmentId());
+        String departmentId = request.getDepartmentId();
 
         Optional<User> existingOpt = userRepository.findByEmail(email);
         if (existingOpt.isPresent()) {
-            return resendExistingInvite(existingOpt.get(), role, department, fullName, invitedByUserId);
+            return resendExistingInvite(existingOpt.get(), role, departmentId, fullName, invitedByUserId);
         }
 
         Instant now = Instant.now(clock);
@@ -66,7 +62,7 @@ public class InvitationServiceImpl implements InvitationService {
         user.setUserId(IdGenerator.nextUlid());
         user.setEmail(email);
         user.setFullName(fullName);
-        user.setDepartmentId(department.getDepartmentId());
+        user.setDepartmentId(departmentId);
         user.setStatus(UserStatus.PENDING);
         user.setEmailVerified(false);
         user.setRoles(new ArrayList<>());
@@ -77,14 +73,14 @@ public class InvitationServiceImpl implements InvitationService {
         userRoleService.replaceStaffRole(user.getUserId(), role, invitedByUserId);
         user = userRepository.findById(user.getUserId()).orElse(user);
 
-        Instant expiresAt = sendInviteEmail(user, role, department.getDepartmentName());
+        Instant expiresAt = sendInviteEmail(user, role, departmentId);
         log.info("Admin {} invited {} as {} in department {}", invitedByUserId, email, role,
-                department.getDepartmentId());
+                departmentId);
 
-        return toResponse(user, role, department.getDepartmentName(), expiresAt, false);
+        return toResponse(user, role, departmentId, expiresAt, false);
     }
 
-    private InvitationResponse resendExistingInvite(User existing, String role, Department department,
+    private InvitationResponse resendExistingInvite(User existing, String role, String departmentId,
             String fullName, String invitedByUserId) {
         if (existing.isEmailVerified() || existing.getStatus() != UserStatus.PENDING
                 || !hasInternalStaffRole(existing)) {
@@ -94,17 +90,17 @@ public class InvitationServiceImpl implements InvitationService {
         if (fullName != null) {
             existing.setFullName(fullName);
         }
-        existing.setDepartmentId(department.getDepartmentId());
+        existing.setDepartmentId(departmentId);
         existing.setUpdatedAt(Instant.now(clock));
         existing = userRepository.save(existing);
 
         userRoleService.replaceStaffRole(existing.getUserId(), role, invitedByUserId);
         existing = userRepository.findById(existing.getUserId()).orElse(existing);
 
-        Instant expiresAt = sendInviteEmail(existing, role, department.getDepartmentName());
+        Instant expiresAt = sendInviteEmail(existing, role, departmentId);
         log.info("Resent staff invite to {} as {}", existing.getEmail(), role);
 
-        return toResponse(existing, role, department.getDepartmentName(), expiresAt, true);
+        return toResponse(existing, role, departmentId, expiresAt, true);
     }
 
     private Instant sendInviteEmail(User user, String role, String departmentName) {

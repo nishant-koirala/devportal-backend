@@ -19,8 +19,6 @@ import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.service.InviteAcceptanceService;
 import com.fonepay.devportal.modules.auth.service.UserTokenService;
-import com.fonepay.devportal.modules.department.entity.Department;
-import com.fonepay.devportal.modules.department.repository.DepartmentRepository;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.document.UserRole;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
@@ -35,7 +33,6 @@ public class InviteAcceptanceServiceImpl implements InviteAcceptanceService {
 
     private final UserTokenService userTokenService;
     private final UserRepository userRepository;
-    private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthMapper authMapper;
     private final Clock clock;
@@ -100,11 +97,6 @@ public class InviteAcceptanceServiceImpl implements InviteAcceptanceService {
     }
 
     private String departmentNameOf(String departmentId) {
-        if (departmentId == null || departmentId.isBlank()) {
-            return null;
-        }
-        return departmentRepository.findById(departmentId)
-                .map(Department::getDepartmentName)
-                .orElse(null);
+        return departmentId; // department entity removed, fallback to ID
     }
 }

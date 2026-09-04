@@ -100,4 +100,10 @@ public class UserBookmarkServiceImpl implements UserBookmarkService {
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
+
+    @Override
+    public void deleteBookmarksByPageId(String pageId) {
+        log.info("Cascade deleting bookmarks for deleted page [{}]", pageId);
+        userBookmarkRepository.deleteByPageId(pageId);
+    }
 }
