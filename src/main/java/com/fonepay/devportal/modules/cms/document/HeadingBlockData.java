@@ -9,7 +9,7 @@ import com.fonepay.devportal.common.util.HtmlSanitizerUtil;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@org.springframework.data.annotation.TypeAlias("HEADING") // TEMPORARY FOR DEV 3 TESTING
+@org.springframework.data.annotation.TypeAlias("HEADING")
 public class HeadingBlockData implements BlockData {
     private String text;
     private Integer level;

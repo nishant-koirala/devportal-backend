@@ -9,7 +9,7 @@ import com.fonepay.devportal.common.util.HtmlSanitizerUtil;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@org.springframework.data.annotation.TypeAlias("FAQ") // TEMPORARY FOR DEV 3 TESTING
+@org.springframework.data.annotation.TypeAlias("FAQ")
 public class FaqBlockData implements BlockData {
     private String question;
     private String answer;

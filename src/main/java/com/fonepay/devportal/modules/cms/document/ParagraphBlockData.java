@@ -9,7 +9,7 @@ import com.fonepay.devportal.common.util.HtmlSanitizerUtil;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@org.springframework.data.annotation.TypeAlias("PARAGRAPH") // TEMPORARY FOR DEV 3 TESTING
+@org.springframework.data.annotation.TypeAlias("PARAGRAPH")
 public class ParagraphBlockData implements BlockData {
     private String text;
 

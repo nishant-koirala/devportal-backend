@@ -92,33 +92,7 @@ public class PageServiceImpl implements PageService {
         page.setCreatedBy(createdBy);
 
         if (request.getDraftBlocks() != null && !request.getDraftBlocks().isEmpty()) {
-            List<Block> draftBlocks = new ArrayList<>();
-            for (BlockDto dto : request.getDraftBlocks()) {
-                Block block = new Block();
-                block.setId(dto.getId() != null && !dto.getId().isBlank() ? dto.getId() : IdGenerator.nextUlid());
-                block.setType(dto.getType());
-                block.setOrder(dto.getOrder());
-                if (dto.getData() != null) {
-                    Class<? extends com.fonepay.devportal.modules.cms.document.BlockData> dataClass = switch (dto.getType()) {
-                        case HEADING -> com.fonepay.devportal.modules.cms.document.HeadingBlockData.class;
-                        case PARAGRAPH -> com.fonepay.devportal.modules.cms.document.ParagraphBlockData.class;
-                        case CODE -> com.fonepay.devportal.modules.cms.document.CodeBlockData.class;
-                        case ENDPOINT -> com.fonepay.devportal.modules.cms.document.EndpointBlockData.class;
-                        case FAQ -> com.fonepay.devportal.modules.cms.document.FaqBlockData.class;
-                        case TABLE -> com.fonepay.devportal.modules.cms.document.TableBlockData.class;
-                        case IMAGE -> com.fonepay.devportal.modules.cms.document.ImageBlockData.class;
-                        case NOTE_WARNING -> com.fonepay.devportal.modules.cms.document.NoteWarningBlockData.class;
-                        case PARAMETER_TABLE -> com.fonepay.devportal.modules.cms.document.ParameterTableBlockData.class;
-                        case TEST_CREDENTIAL -> com.fonepay.devportal.modules.cms.document.TestCredentialBlockData.class;
-                    };
-                    com.fonepay.devportal.modules.cms.document.BlockData parsedData = objectMapper.convertValue(dto.getData(), dataClass);
-                    parsedData.sanitize();
-                    block.setData(parsedData);
-                }
-                draftBlocks.add(block);
-            }
-            draftBlocks.sort(java.util.Comparator.comparingInt(Block::getOrder));
-            page.setDraftBlocks(draftBlocks);
+            page.setDraftBlocks(mapAndSanitizeBlocks(request.getDraftBlocks()));
         }
 
         try {
@@ -202,35 +176,11 @@ public class PageServiceImpl implements PageService {
 
         page.setUpdatedAt(clock.instant());
 
-        List<Block> draftBlocks = new ArrayList<>();
         if (request.getDraftBlocks() != null) {
-            for (BlockDto dto : request.getDraftBlocks()) {
-                Block block = new Block();
-                block.setId(dto.getId() != null && !dto.getId().isBlank() ? dto.getId() : IdGenerator.nextUlid());
-                block.setType(dto.getType());
-                block.setOrder(dto.getOrder());
-                if (dto.getData() != null) {
-                    Class<? extends com.fonepay.devportal.modules.cms.document.BlockData> dataClass = switch (dto.getType()) {
-                        case HEADING -> com.fonepay.devportal.modules.cms.document.HeadingBlockData.class;
-                        case PARAGRAPH -> com.fonepay.devportal.modules.cms.document.ParagraphBlockData.class;
-                        case CODE -> com.fonepay.devportal.modules.cms.document.CodeBlockData.class;
-                        case ENDPOINT -> com.fonepay.devportal.modules.cms.document.EndpointBlockData.class;
-                        case FAQ -> com.fonepay.devportal.modules.cms.document.FaqBlockData.class;
-                        case TABLE -> com.fonepay.devportal.modules.cms.document.TableBlockData.class;
-                        case IMAGE -> com.fonepay.devportal.modules.cms.document.ImageBlockData.class;
-                        case NOTE_WARNING -> com.fonepay.devportal.modules.cms.document.NoteWarningBlockData.class;
-                        case PARAMETER_TABLE -> com.fonepay.devportal.modules.cms.document.ParameterTableBlockData.class;
-                        case TEST_CREDENTIAL -> com.fonepay.devportal.modules.cms.document.TestCredentialBlockData.class;
-                    };
-                    com.fonepay.devportal.modules.cms.document.BlockData parsedData = objectMapper.convertValue(dto.getData(), dataClass);
-                    parsedData.sanitize();
-                    block.setData(parsedData);
-                }
-                draftBlocks.add(block);
-            }
-            draftBlocks.sort(java.util.Comparator.comparingInt(Block::getOrder));
+            page.setDraftBlocks(mapAndSanitizeBlocks(request.getDraftBlocks()));
+        } else {
+            page.setDraftBlocks(new ArrayList<>());
         }
-        page.setDraftBlocks(draftBlocks);
 
         try {
             Page saved = pageRepository.save(page);
@@ -516,5 +466,36 @@ public class PageServiceImpl implements PageService {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private List<Block> mapAndSanitizeBlocks(List<BlockDto> dtos) {
+        if (dtos == null) return new ArrayList<>();
+        List<Block> draftBlocks = new ArrayList<>();
+        for (BlockDto dto : dtos) {
+            Block block = new Block();
+            block.setId(dto.getId() != null && !dto.getId().isBlank() ? dto.getId() : IdGenerator.nextUlid());
+            block.setType(dto.getType());
+            block.setOrder(dto.getOrder());
+            if (dto.getData() != null) {
+                Class<? extends com.fonepay.devportal.modules.cms.document.BlockData> dataClass = switch (dto.getType()) {
+                    case HEADING -> com.fonepay.devportal.modules.cms.document.HeadingBlockData.class;
+                    case PARAGRAPH -> com.fonepay.devportal.modules.cms.document.ParagraphBlockData.class;
+                    case CODE -> com.fonepay.devportal.modules.cms.document.CodeBlockData.class;
+                    case ENDPOINT -> com.fonepay.devportal.modules.cms.document.EndpointBlockData.class;
+                    case FAQ -> com.fonepay.devportal.modules.cms.document.FaqBlockData.class;
+                    case TABLE -> com.fonepay.devportal.modules.cms.document.TableBlockData.class;
+                    case IMAGE -> com.fonepay.devportal.modules.cms.document.ImageBlockData.class;
+                    case NOTE_WARNING -> com.fonepay.devportal.modules.cms.document.NoteWarningBlockData.class;
+                    case PARAMETER_TABLE -> com.fonepay.devportal.modules.cms.document.ParameterTableBlockData.class;
+                    case TEST_CREDENTIAL -> com.fonepay.devportal.modules.cms.document.TestCredentialBlockData.class;
+                };
+                com.fonepay.devportal.modules.cms.document.BlockData parsedData = objectMapper.convertValue(dto.getData(), dataClass);
+                parsedData.sanitize();
+                block.setData(parsedData);
+            }
+            draftBlocks.add(block);
+        }
+        draftBlocks.sort(java.util.Comparator.comparingInt(Block::getOrder));
+        return draftBlocks;
     }
 }
