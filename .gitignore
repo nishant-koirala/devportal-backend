@@ -36,3 +36,7 @@ build/
 
 ### Tests ###
 src/test/
+
+### Postman Collections ###
+*.postman_collection.json
+Entire_DevPortal_Collection.json

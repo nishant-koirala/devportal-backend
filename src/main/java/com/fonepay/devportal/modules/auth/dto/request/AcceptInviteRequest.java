@@ -1,7 +1,8 @@
 package com.fonepay.devportal.modules.auth.dto.request;
 
+import com.fonepay.devportal.common.validation.ValidPassword;
+
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -12,8 +13,7 @@ public class AcceptInviteRequest {
     private String token;
 
     @NotBlank(message = "Password is required")
-    @Pattern(regexp = "^(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=]).{12,64}$",
-            message = "Password must be between 12 and 64 characters and contain at least one digit and one symbol")
+    @ValidPassword
     private String password;
 
     @NotBlank(message = "Full name is required")

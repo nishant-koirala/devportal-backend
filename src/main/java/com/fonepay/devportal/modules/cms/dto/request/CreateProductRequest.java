@@ -41,7 +41,7 @@ public class CreateProductRequest {
     private ProductStatus status;
 
     @Min(value = 0, message = "Display order must be a non-negative integer")
-    private int displayOrder;
+    private Integer displayOrder;
 
     @Valid
     private List<CreateProductResourceRequest> resources;

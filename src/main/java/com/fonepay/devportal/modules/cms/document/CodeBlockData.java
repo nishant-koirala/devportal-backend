@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@org.springframework.data.annotation.TypeAlias("CODE") // TEMPORARY FOR DEV 3 TESTING
+@org.springframework.data.annotation.TypeAlias("CODE")
 public class CodeBlockData implements BlockData {
     private String language;
     private String code;

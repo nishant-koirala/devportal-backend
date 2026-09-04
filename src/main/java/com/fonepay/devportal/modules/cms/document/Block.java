@@ -21,9 +21,6 @@ public class Block {
     @Field("order")
     private int order;
 
-    @Field("block_version")
-    private long blockVersion = 0L;
-
     @Field("data")
     private BlockData data;
 }

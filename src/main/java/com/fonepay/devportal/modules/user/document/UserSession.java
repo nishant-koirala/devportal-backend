@@ -48,6 +48,9 @@ public class UserSession {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
+    @Column(name = "max_expires_at", nullable = false)
+    private Instant maxExpiresAt;
+
     @Column(name = "revoked_at")
     private Instant revokedAt;
 

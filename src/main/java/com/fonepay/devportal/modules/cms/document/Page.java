@@ -2,6 +2,7 @@ package com.fonepay.devportal.modules.cms.document;
 
 import com.fonepay.devportal.modules.cms.enums.PageStatus;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -28,6 +29,9 @@ public class Page {
 
     @Id
     private String id;
+
+    @Version
+    private Long version;
 
     @Indexed
     @Field("product_id")

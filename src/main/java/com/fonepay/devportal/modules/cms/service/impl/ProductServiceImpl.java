@@ -92,7 +92,7 @@ public class ProductServiceImpl implements ProductService {
                 .description(request.getDescription() != null ? request.getDescription().trim() : null)
                 .logoUrl(request.getLogoUrl() != null ? request.getLogoUrl().trim() : null)
                 .status(status)
-                .displayOrder(request.getDisplayOrder())
+                .displayOrder(request.getDisplayOrder() != null ? request.getDisplayOrder() : 0)
                 .resources(resources)
                 .createdAt(now)
                 .updatedAt(now)
@@ -157,7 +157,7 @@ public class ProductServiceImpl implements ProductService {
         if (request.getStatus() != null) {
             product.setStatus(request.getStatus());
         }
-        product.setDisplayOrder(request.getDisplayOrder());
+        product.setDisplayOrder(request.getDisplayOrder() != null ? request.getDisplayOrder() : product.getDisplayOrder());
         product.setUpdatedAt(clock.instant());
 
         Product saved = saveWithOptimisticLockHandling(product);

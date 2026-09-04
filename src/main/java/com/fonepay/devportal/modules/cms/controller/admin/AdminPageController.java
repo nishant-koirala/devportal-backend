@@ -28,6 +28,7 @@ import com.fonepay.devportal.modules.cms.dto.request.BlockCreateRequest;
 import com.fonepay.devportal.modules.cms.dto.request.BlockReorderRequest;
 import com.fonepay.devportal.modules.cms.dto.request.BlockUpdateRequest;
 import com.fonepay.devportal.modules.cms.dto.request.CreatePageRequest;
+import com.fonepay.devportal.modules.cms.dto.request.BulkPageSaveRequest;
 import com.fonepay.devportal.modules.cms.dto.request.PublishPageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.RejectPageRequest;
 import com.fonepay.devportal.modules.cms.dto.request.ReorderPagesRequest;
@@ -143,6 +144,23 @@ public class AdminPageController {
                         .build());
     }
 
+    @PutMapping(ApiRoutes.Cms.PAGE_BY_ID)
+    public ResponseEntity<ApiResponse<PageMetaResponse>> bulkSavePage(
+            @PathVariable @NotBlank String pageId,
+            @Valid @RequestBody BulkPageSaveRequest request) {
+
+        PageMetaResponse response = pageService.bulkSavePage(pageId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PageMetaResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page saved successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
+    }
+
     @DeleteMapping(ApiRoutes.Cms.PAGE_BY_ID)
     public ResponseEntity<ApiResponse<PageMetaResponse>> archivePage(@PathVariable @NotBlank String pageId) {
         log.info("Archiving page {}", pageId);
@@ -227,6 +245,7 @@ public class AdminPageController {
                         .build());
     }
 
+    @Deprecated
     @PostMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks")
     public ResponseEntity<ApiResponse<Block>> addBlock(
             @PathVariable String pageId,
@@ -244,6 +263,7 @@ public class AdminPageController {
                         .build());
     }
 
+    @Deprecated
     @PutMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks/{blockId}")
     public ResponseEntity<ApiResponse<Void>> updateBlock(
             @PathVariable String pageId,
@@ -261,6 +281,7 @@ public class AdminPageController {
                         .build());
     }
 
+    @Deprecated
     @PatchMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks/reorder")
     public ResponseEntity<ApiResponse<Void>> reorderBlocks(
             @PathVariable String pageId,
@@ -277,6 +298,7 @@ public class AdminPageController {
                         .build());
     }
 
+    @Deprecated
     @DeleteMapping(ApiRoutes.Cms.PAGE_BY_ID + "/blocks/{blockId}")
     public ResponseEntity<ApiResponse<Void>> deleteBlock(
             @PathVariable String pageId,

@@ -16,7 +16,7 @@ public interface BlockService {
      * @param order Optional specific order to insert at. If null, append to the end.
      * @return The newly created Block.
      */
-    Block addBlock(String pageId, BlockType type, BlockData data, Integer order);
+    Block addBlock(String pageId, BlockType type, java.util.Map<String, Object> data, Integer order);
 
     /**
      * Updates an existing block's data.
@@ -26,7 +26,7 @@ public interface BlockService {
      * @param currentVersion The version of the block before the update for optimistic locking.
      * @return true if successful.
      */
-    boolean updateBlockData(String pageId, String blockId, BlockData data, long currentVersion);
+    boolean updateBlockData(String pageId, String blockId, java.util.Map<String, Object> data, long currentVersion);
 
     /**
      * Reorders the blocks in a page based on a new sequence of IDs.

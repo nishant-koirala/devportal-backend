@@ -54,6 +54,7 @@ public class UserSessionServiceImpl implements UserSessionService {
                 .createdAt(now)
                 .lastActivityAt(now)
                 .expiresAt(expiresAt)
+                .maxExpiresAt(expiresAt)
                 .status(SessionStatus.ACTIVE)
                 .build();
 

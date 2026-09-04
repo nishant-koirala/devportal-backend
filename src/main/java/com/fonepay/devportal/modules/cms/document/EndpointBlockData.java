@@ -9,7 +9,7 @@ import com.fonepay.devportal.common.util.HtmlSanitizerUtil;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@org.springframework.data.annotation.TypeAlias("ENDPOINT") // TEMPORARY FOR DEV 3 TESTING
+@org.springframework.data.annotation.TypeAlias("ENDPOINT")
 public class EndpointBlockData implements BlockData {
     private String method;
     private String path;

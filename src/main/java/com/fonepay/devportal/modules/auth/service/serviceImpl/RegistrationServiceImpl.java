@@ -2,7 +2,11 @@ package com.fonepay.devportal.modules.auth.service.serviceImpl;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +18,7 @@ import com.fonepay.devportal.modules.auth.service.RegistrationService;
 import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.constant.enums.TokenType;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
+import com.fonepay.devportal.common.exception.BadRequestException;
 import com.fonepay.devportal.modules.admin.developer.service.ActivityRecordingService;
 import com.fonepay.devportal.common.exception.EmailAlreadyVerifiedException;
 import com.fonepay.devportal.common.exception.ResourceNotFoundException;
@@ -24,8 +29,13 @@ import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.service.UserTokenService;
+import com.fonepay.devportal.modules.cms.document.Product;
+import com.fonepay.devportal.modules.cms.enums.ProductStatus;
+import com.fonepay.devportal.modules.cms.repository.ProductRepository;
 import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
+import com.fonepay.devportal.modules.user.document.UserProduct;
+import com.fonepay.devportal.modules.user.repository.UserProductRepository;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.service.UserRoleService;
 
@@ -47,7 +57,8 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final AuthMapper authMapper;
     private final Clock clock;
     private final ActivityRecordingService activityRecordingService;
-
+    private final ProductRepository productRepository;
+    private final UserProductRepository userProductRepository;
     @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
 
@@ -55,6 +66,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Transactional
     public RegistrationResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
+        List<String> publishedProductIds = resolvePublishedProductIds(request.getProductIds());
 
         Optional<User> existingUserOpt = userRepository.findByEmail(email);
 
@@ -71,6 +83,7 @@ public class RegistrationServiceImpl implements RegistrationService {
             existingUser.setUpdatedAt(Instant.now(clock));
             
             existingUser = userRepository.save(existingUser);
+            replaceUserProducts(existingUser.getUserId(), publishedProductIds);
             
             // Delete old tokens and generate a new one
             userTokenService.deleteAllTokensForUser(existingUser.getUserId());
@@ -81,7 +94,6 @@ public class RegistrationServiceImpl implements RegistrationService {
             
             return authMapper.toRegistrationResponse(existingUser);
         }
-
         Instant now = Instant.now(clock);
         User user = new User();
         user.setUserId(IdGenerator.nextUlid());
@@ -96,7 +108,8 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         user = userRepository.save(user);
         userRoleService.assignDefaultRole(user.getUserId(), DEFAULT_ROLE);
-        
+        replaceUserProducts(user.getUserId(), publishedProductIds);
+
         // The role was saved to the DB, but our in-memory user object doesn't know about it yet!
         // We must re-fetch the user to get the updated roles list before returning the response.
         user = userRepository.findById(user.getUserId()).orElse(user);
@@ -156,4 +169,43 @@ public class RegistrationServiceImpl implements RegistrationService {
                 .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getRoleName())
                         || "EDITOR".equalsIgnoreCase(role.getRoleName()));
     }
+
+    private List<String> resolvePublishedProductIds(List<String> productIds) {
+        LinkedHashSet<String> requestedIds = productIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .map(String::trim)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (requestedIds.isEmpty()) {
+            throw new BadRequestException("At least one product is required");
+        }
+
+        Set<String> publishedIds = productRepository.findAllById(requestedIds).stream()
+                .filter(product -> product.getStatus() == ProductStatus.PUBLISHED)
+                .map(Product::getId)
+                .collect(Collectors.toSet());
+
+        List<String> resolved = requestedIds.stream()
+                .filter(publishedIds::contains)
+                .toList();
+
+        if (resolved.isEmpty()) {
+            throw new BadRequestException("At least one published product is required");
+        }
+        return resolved;
+    }
+
+    private void replaceUserProducts(String userId, List<String> productIds) {
+        userProductRepository.deleteAll(userProductRepository.findByUserId(userId));
+        userProductRepository.flush();
+        Instant selectedAt = Instant.now(clock);
+        userProductRepository.saveAll(productIds.stream()
+                .map(productId -> UserProduct.builder()
+                        .userId(userId)
+                        .productId(productId)
+                        .selectedAt(selectedAt)
+                        .build())
+                .toList());
+    }
 }
+
