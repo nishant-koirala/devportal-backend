@@ -27,6 +27,7 @@ import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
 import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 import com.fonepay.devportal.modules.auth.dto.response.AuthResponse;
 import com.fonepay.devportal.modules.auth.dto.response.InvitePreviewResponse;
+import com.fonepay.devportal.modules.auth.dto.response.NextPathResponse;
 import com.fonepay.devportal.modules.auth.dto.response.OtpResponse;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.service.AdminAuthService;
@@ -35,6 +36,7 @@ import com.fonepay.devportal.modules.auth.service.InviteAcceptanceService;
 import com.fonepay.devportal.modules.auth.service.LoginService;
 import com.fonepay.devportal.modules.auth.service.PasswordService;
 import com.fonepay.devportal.modules.auth.service.RegistrationService;
+import com.fonepay.devportal.modules.auth.validation.NextPathValidator;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -51,17 +53,20 @@ public class AuthController {
         private final PasswordService passwordService;
         private final AuthService authService;
         private final AdminAuthService adminAuthService;
+        private final NextPathValidator nextPathValidator;
         private final Clock clock;
 
         @PostMapping(ApiRoutes.Auth.LOGIN)
         public ResponseEntity<ApiResponse<AuthResponse>> login(
                         @Valid @RequestBody LoginRequest request,
+                        @RequestParam(value = "next", required = false) String next,
                         HttpServletRequest httpRequest) {
 
                 String ipAddress = HttpRequestUtil.getClientIp(httpRequest);
                 String userAgent = HttpRequestUtil.getUserAgent(httpRequest);
 
                 AuthResponse authResponse = loginService.login(request, ipAddress, userAgent);
+                authResponse.setNext(nextPathValidator.resolve(next));
 
                 return ResponseEntity.ok(ApiResponse.<AuthResponse>builder()
                                 .status(HttpStatus.OK.value())
@@ -88,9 +93,10 @@ public class AuthController {
 
         @PostMapping(ApiRoutes.Auth.REGISTER)
         public ResponseEntity<ApiResponse<RegistrationResponse>> register(
-                        @Valid @RequestBody RegisterRequest request) {
+                        @Valid @RequestBody RegisterRequest request,
+                        @RequestParam(value = "next", required = false) String next) {
 
-                RegistrationResponse response = registrationService.register(request);
+                RegistrationResponse response = registrationService.register(request, next);
 
                 return ResponseEntity.status(HttpStatus.CREATED).body(
                                 ApiResponse.<RegistrationResponse>builder()
@@ -103,15 +109,18 @@ public class AuthController {
         }
 
         @GetMapping(ApiRoutes.Auth.VERIFY_EMAIL)
-        public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam("token") String token) {
+        public ResponseEntity<ApiResponse<NextPathResponse>> verifyEmail(
+                        @RequestParam("token") String token,
+                        @RequestParam(value = "next", required = false) String next) {
 
                 registrationService.verifyEmail(token);
 
                 return ResponseEntity.ok(
-                                ApiResponse.<Void>builder()
+                                ApiResponse.<NextPathResponse>builder()
                                                 .status(HttpStatus.OK.value())
                                                 .success(true)
                                                 .message("Email verified successfully. You can now login.")
+                                                .data(NextPathResponse.builder().next(nextPathValidator.resolve(next)).build())
                                                 .timestamp(LocalDateTime.now(clock))
                                                 .build());
         }
@@ -168,9 +177,10 @@ public class AuthController {
         // Forgot Password
         @PostMapping(ApiRoutes.Auth.FORGOT_PASSWORD)
         public ResponseEntity<ApiResponse<Void>> forgotPassword(
-                        @Valid @RequestBody ForgotPasswordRequest request) {
+                        @Valid @RequestBody ForgotPasswordRequest request,
+                        @RequestParam(value = "next", required = false) String next) {
 
-                passwordService.forgotPassword(request);
+                passwordService.forgotPassword(request, next);
 
                 return ResponseEntity.ok(
                                 ApiResponse.<Void>builder()
@@ -183,16 +193,18 @@ public class AuthController {
 
         // Reset Password
         @PostMapping(ApiRoutes.Auth.RESET_PASSWORD)
-        public ResponseEntity<ApiResponse<Void>> resetPassword(
-                        @Valid @RequestBody ResetPasswordRequest request) {
+        public ResponseEntity<ApiResponse<NextPathResponse>> resetPassword(
+                        @Valid @RequestBody ResetPasswordRequest request,
+                        @RequestParam(value = "next", required = false) String next) {
 
                 passwordService.resetPassword(request);
 
                 return ResponseEntity.ok(
-                                ApiResponse.<Void>builder()
+                                ApiResponse.<NextPathResponse>builder()
                                                 .status(HttpStatus.OK.value())
                                                 .success(true)
                                                 .message("Password has been reset successfully. Please log in.")
+                                                .data(NextPathResponse.builder().next(nextPathValidator.resolve(next)).build())
                                                 .timestamp(LocalDateTime.now(clock))
                                                 .build());
         }

@@ -19,4 +19,5 @@ public class AuthResponse {
     private List<String> roles;
     private String token;
     private AuthStatus authStatus;
+    private String next;
 }

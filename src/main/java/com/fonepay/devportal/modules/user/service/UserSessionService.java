@@ -1,12 +1,13 @@
 package com.fonepay.devportal.modules.user.service;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import com.fonepay.devportal.modules.user.document.UserSession;
 
 public interface UserSessionService {
 
-    UserSession createSession(String userId, String ipAddress, String userAgent, long expirationMs);
+    UserSession createSession(String userId, String ipAddress, String userAgent, Collection<String> roleNames);
 
     void revokeSessionBySessionId(String sessionId);
 

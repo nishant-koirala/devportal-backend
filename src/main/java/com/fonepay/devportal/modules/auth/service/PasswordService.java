@@ -5,7 +5,7 @@ import com.fonepay.devportal.modules.auth.dto.request.ResetPasswordRequest;
 
 public interface PasswordService {
 
-    void forgotPassword(ForgotPasswordRequest request);
+    void forgotPassword(ForgotPasswordRequest request, String next);
 
     void resetPassword(ResetPasswordRequest request);
 }

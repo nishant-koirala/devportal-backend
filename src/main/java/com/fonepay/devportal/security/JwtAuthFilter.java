@@ -1,12 +1,18 @@
 package com.fonepay.devportal.security;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,7 +20,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fonepay.devportal.common.constant.AuthMessages;
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
+import com.fonepay.devportal.common.dto.ApiResponse;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.document.UserSession;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
@@ -36,6 +45,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
     private final UserSessionRepository userSessionRepository;
     private final Clock clock;
+    private final ObjectMapper objectMapper;
+
+    @Value("${session.activity-debounce}")
+    private Duration activityDebounce;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -59,6 +72,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String token = authHeader.substring(7);
 
         try {
+            if (jwtUtil.isWellFormedExpiredToken(token)) {
+                writeUnauthorized(response, AuthMessages.SESSION_EXPIRED);
+                return;
+            }
+
             if (jwtUtil.validateToken(token)) {
                 String userId = jwtUtil.extractUserId(token);
                 String sessionId = jwtUtil.extractSessionId(token);
@@ -69,26 +87,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                     if (session != null && session.getStatus() == SessionStatus.ACTIVE) {
                         Instant now = clock.instant();
-                        if (session.getExpiresAt() != null && session.getExpiresAt().isBefore(now)) {
+                        if (isSessionExpired(session, now)) {
                             session.setStatus(SessionStatus.EXPIRED);
                             userSessionRepository.save(session);
                             log.warn("Session {} has expired for user {}", sessionId, userId);
-                        } else {
-                            session.setLastActivityAt(now);
-                            userSessionRepository.save(session);
+                            writeUnauthorized(response, AuthMessages.SESSION_EXPIRED);
+                            return;
+                        }
 
-                            User user = userRepository.findById(userId).orElse(null);
-                            if (user != null) {
-                                // Build authorities from the JWT token
-                                List<SimpleGrantedAuthority> authorities = buildAuthorities(token);
+                        touchActivityIfDue(session, now);
 
-                                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                        user,
-                                        null,
-                                        authorities);
-                                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                                SecurityContextHolder.getContext().setAuthentication(authToken);
-                            }
+                        User user = userRepository.findById(userId).orElse(null);
+                        if (user != null) {
+                            List<SimpleGrantedAuthority> authorities = buildAuthorities(token);
+
+                            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                    user,
+                                    null,
+                                    authorities);
+                            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            SecurityContextHolder.getContext().setAuthentication(authToken);
                         }
                     }
                 }
@@ -98,6 +116,53 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isSessionExpired(UserSession session, Instant now) {
+        if (session.getMaxExpiresAt() != null && !session.getMaxExpiresAt().isAfter(now)) {
+            return true;
+        }
+        return session.getExpiresAt() != null && !session.getExpiresAt().isAfter(now);
+    }
+
+    private void touchActivityIfDue(UserSession session, Instant now) {
+        Instant lastActivity = session.getLastActivityAt() != null
+                ? session.getLastActivityAt()
+                : session.getCreatedAt();
+        if (lastActivity != null && now.isBefore(lastActivity.plus(activityDebounce))) {
+            return;
+        }
+
+        Duration idleWindow = lastActivity != null && session.getExpiresAt() != null
+                ? Duration.between(lastActivity, session.getExpiresAt())
+                : Duration.ZERO;
+        if (idleWindow.isNegative() || idleWindow.isZero()) {
+            return;
+        }
+
+        session.setLastActivityAt(now);
+        Instant slidExpiresAt = now.plus(idleWindow);
+        if (session.getMaxExpiresAt() != null && slidExpiresAt.isAfter(session.getMaxExpiresAt())) {
+            slidExpiresAt = session.getMaxExpiresAt();
+        }
+        session.setExpiresAt(slidExpiresAt);
+        userSessionRepository.save(session);
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .success(false)
+                .message(message)
+                .timestamp(LocalDateTime.now(clock))
+                .build();
+
+        response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+        response.getWriter().flush();
     }
 
     private List<SimpleGrantedAuthority> buildAuthorities(String token) {

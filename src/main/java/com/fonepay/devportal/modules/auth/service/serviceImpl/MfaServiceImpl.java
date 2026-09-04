@@ -51,9 +51,6 @@ public class MfaServiceImpl {
     private final AuthMapper authMapper;
     private final Clock clock;
 
-    @Value("${jwt.expiration-ms}")
-    private long jwtExpirationMs;
-
     @Value("${app.otp.expiration-minutes:5}")
     private int otpExpirationMinutes;
 
@@ -137,9 +134,10 @@ public class MfaServiceImpl {
         log.info("OTP verification successful for user: {}", user.getUserId());
 
         // Create ACTIVE session now
-        UserSession session = userSessionService.createSession(user.getUserId(), null, null, jwtExpirationMs);
+        UserSession session = userSessionService.createSession(user.getUserId(), null, null, roleNames);
         java.util.Set<String> permissions = userRoleService.getPermissionsByUserId(user.getUserId());
-        String jwt = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions);
+        String jwt = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions,
+                session.getMaxExpiresAt());
         return authMapper.toAuthResponse(user, jwt, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 }

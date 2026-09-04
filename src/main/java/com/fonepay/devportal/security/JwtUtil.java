@@ -3,6 +3,7 @@ package com.fonepay.devportal.security;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import com.fonepay.devportal.modules.user.document.User;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -30,15 +32,12 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration-ms}")
-    private long jwtExpirationMs;
-
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(User user, String sessionId, java.util.List<String> roles,
-            java.util.Set<String> permissions) {
+            java.util.Set<String> permissions, Instant expiresAt) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", user.getEmail());
         claims.put("sessionId", sessionId);
@@ -52,12 +51,12 @@ public class JwtUtil {
             claims.put("fullName", user.getFullName());
         }
 
-        return createToken(claims, user.getUserId());
+        return createToken(claims, user.getUserId(), expiresAt);
     }
 
-    private String createToken(Map<String, Object> claims, String subject) {
+    private String createToken(Map<String, Object> claims, String subject, Instant expiresAt) {
         Date now = Date.from(clock.instant());
-        Date expiryDate = Date.from(clock.instant().plusMillis(jwtExpirationMs));
+        Date expiryDate = Date.from(expiresAt);
 
         return Jwts.builder()
                 .setClaims(claims)
@@ -110,8 +109,21 @@ public class JwtUtil {
     public boolean isTokenExpired(String token) {
         try {
             return extractExpiration(token).before(Date.from(clock.instant()));
+        } catch (ExpiredJwtException e) {
+            return true;
         } catch (Exception e) {
             return true;
+        }
+    }
+
+    public boolean isWellFormedExpiredToken(String token) {
+        try {
+            Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
+            return isTokenExpired(token);
+        } catch (ExpiredJwtException e) {
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 

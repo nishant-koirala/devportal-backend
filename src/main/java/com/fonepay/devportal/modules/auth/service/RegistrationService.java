@@ -5,7 +5,7 @@ import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 
 public interface RegistrationService {
 
-    RegistrationResponse register(RegisterRequest request);
+    RegistrationResponse register(RegisterRequest request, String next);
 
     void verifyEmail(String token);
 

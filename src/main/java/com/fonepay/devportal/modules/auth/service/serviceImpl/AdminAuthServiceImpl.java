@@ -59,9 +59,6 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     private final Clock clock;
     private final RateLimitService rateLimitService;
 
-    @Value("${jwt.expiration-ms}")
-    private long jwtExpirationMs;
-
     @Value("${app.otp.expiration-minutes:5}")
     private int otpExpirationMinutes;
 
@@ -234,9 +231,10 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         userTokenService.deleteToken(token);
         log.info("Admin/Editor OTP verification successful for user: {}", user.getUserId());
 
-        UserSession session = userSessionService.createSession(user.getUserId(), null, null, jwtExpirationMs);
+        UserSession session = userSessionService.createSession(user.getUserId(), null, null, roleNames);
         java.util.Set<String> permissions = userRoleService.getPermissionsByUserId(user.getUserId());
-        String jwt = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions);
+        String jwt = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions,
+                session.getMaxExpiresAt());
         return authMapper.toAuthResponse(user, jwt, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
 }

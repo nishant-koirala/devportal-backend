@@ -1,10 +1,13 @@
 package com.fonepay.devportal.modules.user.service.serviceImpl;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fonepay.devportal.common.constant.enums.SessionStatus;
@@ -24,8 +27,20 @@ public class UserSessionServiceImpl implements UserSessionService {
     private final UserSessionRepository userSessionRepository;
     private final Clock clock;
 
+    @Value("${session.idle.ttl}")
+    private Duration idleTtl;
+
+    @Value("${session.max.ttl}")
+    private Duration maxTtl;
+
+    @Value("${session.internal.idle.ttl}")
+    private Duration internalIdleTtl;
+
+    @Value("${session.internal.max.ttl}")
+    private Duration internalMaxTtl;
+
     @Override
-    public UserSession createSession(String userId, String ipAddress, String userAgent, long expirationMs) {
+    public UserSession createSession(String userId, String ipAddress, String userAgent, Collection<String> roleNames) {
         Instant now = clock.instant();
 
         // Revoke any existing active session from the same device / IP
@@ -43,9 +58,16 @@ public class UserSessionServiceImpl implements UserSessionService {
             }
         }
 
-        String sessionId = IdGenerator.nextUlid();
-        Instant expiresAt = now.plusMillis(expirationMs);
+        boolean internal = isInternal(roleNames);
+        Duration idle = internal ? internalIdleTtl : idleTtl;
+        Duration max = internal ? internalMaxTtl : maxTtl;
+        Instant maxExpiresAt = now.plus(max);
+        Instant expiresAt = now.plus(idle);
+        if (expiresAt.isAfter(maxExpiresAt)) {
+            expiresAt = maxExpiresAt;
+        }
 
+        String sessionId = IdGenerator.nextUlid();
         UserSession session = UserSession.builder()
                 .sessionId(sessionId)
                 .userId(userId)
@@ -54,13 +76,22 @@ public class UserSessionServiceImpl implements UserSessionService {
                 .createdAt(now)
                 .lastActivityAt(now)
                 .expiresAt(expiresAt)
-                .maxExpiresAt(expiresAt)
+                .maxExpiresAt(maxExpiresAt)
                 .status(SessionStatus.ACTIVE)
                 .build();
 
         UserSession savedSession = userSessionRepository.save(session);
-        log.info("Active session created with ID: {} for user: {}", sessionId, userId);
+        log.info("Active {} session created with ID: {} for user: {} (idle={}, max={})",
+                internal ? "internal" : "developer", sessionId, userId, idle, max);
         return savedSession;
+    }
+
+    private boolean isInternal(Collection<String> roleNames) {
+        if (roleNames == null || roleNames.isEmpty()) {
+            return false;
+        }
+        return roleNames.stream()
+                .anyMatch(role -> "ADMIN".equalsIgnoreCase(role) || "EDITOR".equalsIgnoreCase(role));
     }
 
     @Override
@@ -110,7 +141,10 @@ public class UserSessionServiceImpl implements UserSessionService {
 
     @Override
     public Optional<UserSession> getActiveSession(String sessionId) {
+        Instant now = clock.instant();
         return userSessionRepository.findBySessionId(sessionId)
-                .filter(s -> s.getStatus() == SessionStatus.ACTIVE && s.getExpiresAt().isAfter(clock.instant()));
+                .filter(s -> s.getStatus() == SessionStatus.ACTIVE)
+                .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(now))
+                .filter(s -> s.getMaxExpiresAt() == null || s.getMaxExpiresAt().isAfter(now));
     }
 }

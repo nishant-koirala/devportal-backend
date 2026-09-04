@@ -29,6 +29,7 @@ import com.fonepay.devportal.modules.auth.dto.request.RegisterRequest;
 import com.fonepay.devportal.modules.auth.dto.response.RegistrationResponse;
 import com.fonepay.devportal.modules.auth.mapper.AuthMapper;
 import com.fonepay.devportal.modules.auth.service.UserTokenService;
+import com.fonepay.devportal.modules.auth.validation.NextPathValidator;
 import com.fonepay.devportal.modules.cms.document.Product;
 import com.fonepay.devportal.modules.cms.enums.ProductStatus;
 import com.fonepay.devportal.modules.cms.repository.ProductRepository;
@@ -59,12 +60,13 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final ActivityRecordingService activityRecordingService;
     private final ProductRepository productRepository;
     private final UserProductRepository userProductRepository;
+    private final NextPathValidator nextPathValidator;
     @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
 
     @Override
     @Transactional
-    public RegistrationResponse register(RegisterRequest request) {
+    public RegistrationResponse register(RegisterRequest request, String next) {
         String email = request.getEmail().trim().toLowerCase();
         List<String> publishedProductIds = resolvePublishedProductIds(request.getProductIds());
 
@@ -90,9 +92,11 @@ public class RegistrationServiceImpl implements RegistrationService {
             String rawToken = userTokenService.createAndSaveToken(
                     existingUser.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
             
-            sendVerificationEmail(existingUser.getEmail(), rawToken);
+            sendVerificationEmail(existingUser.getEmail(), rawToken, next);
             
-            return authMapper.toRegistrationResponse(existingUser);
+            RegistrationResponse response = authMapper.toRegistrationResponse(existingUser);
+            response.setNext(nextPathValidator.resolve(next));
+            return response;
         }
         Instant now = Instant.now(clock);
         User user = new User();
@@ -110,15 +114,16 @@ public class RegistrationServiceImpl implements RegistrationService {
         userRoleService.assignDefaultRole(user.getUserId(), DEFAULT_ROLE);
         replaceUserProducts(user.getUserId(), publishedProductIds);
 
-        // The role was saved to the DB, but our in-memory user object doesn't know about it yet!
-        // We must re-fetch the user to get the updated roles list before returning the response.
+       
         user = userRepository.findById(user.getUserId()).orElse(user);
 
         String rawToken = userTokenService.createAndSaveToken(
                 user.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
-        sendVerificationEmail(user.getEmail(), rawToken);
+        sendVerificationEmail(user.getEmail(), rawToken, next);
 
-        return authMapper.toRegistrationResponse(user);
+        RegistrationResponse response = authMapper.toRegistrationResponse(user);
+        response.setNext(nextPathValidator.resolve(next));
+        return response;
     }
 
     @Override
@@ -153,11 +158,12 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         String rawToken = userTokenService.createAndSaveToken(
                 user.getUserId(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFICATION_TOKEN_HOURS);
-        sendVerificationEmail(user.getEmail(), rawToken);
+        sendVerificationEmail(user.getEmail(), rawToken, null);
     }
 
-    private void sendVerificationEmail(String email, String rawToken) {
-        String verificationUrl = frontendUrl + "/verify-email?token=" + rawToken;
+    private void sendVerificationEmail(String email, String rawToken, String next) {
+        String verificationUrl = nextPathValidator.appendQuery(
+                frontendUrl + "/verify-email?token=" + rawToken, next);
         emailService.sendVerificationEmail(email, verificationUrl);
     }
 

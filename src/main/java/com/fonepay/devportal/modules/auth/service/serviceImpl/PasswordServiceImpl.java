@@ -23,6 +23,7 @@ import com.fonepay.devportal.modules.notification.service.EmailService;
 import com.fonepay.devportal.modules.user.document.User;
 import com.fonepay.devportal.modules.user.repository.UserRepository;
 import com.fonepay.devportal.modules.user.service.UserSessionService;
+import com.fonepay.devportal.modules.auth.validation.NextPathValidator;
 import com.fonepay.devportal.security.RateLimitService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,12 +43,13 @@ public class PasswordServiceImpl implements PasswordService {
     private final Clock clock;
     private final ActivityRecordingService activityRecordingService;
     private final RateLimitService rateLimitService;
+    private final NextPathValidator nextPathValidator;
 
     @Value("${app.frontend.url:${FRONTEND_URL:http://localhost:3000}}")
     private String frontendUrl;
 
     @Override
-    public void forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request, String next) {
         String email = request.getEmail().trim().toLowerCase();
         rateLimitService.checkAuthEmail(email);
 
@@ -60,7 +62,8 @@ public class PasswordServiceImpl implements PasswordService {
 
             String rawToken = userTokenService.createAndSaveToken(
                     user.getUserId(), TokenType.PASSWORD_RESET, PASSWORD_RESET_TOKEN_HOURS);
-            String resetUrl = frontendUrl + ApiRoutes.Auth.RESET_PASSWORD + "?token=" + rawToken;
+            String resetUrl = nextPathValidator.appendQuery(
+                    frontendUrl + ApiRoutes.Auth.RESET_PASSWORD + "?token=" + rawToken, next);
             emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
         });
     }

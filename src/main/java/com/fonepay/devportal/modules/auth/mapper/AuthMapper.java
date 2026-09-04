@@ -22,8 +22,10 @@ public interface AuthMapper {
 
     @Mapping(target = "token", source = "token")
     @Mapping(target = "authStatus", source = "authStatus")
+    @Mapping(target = "next", ignore = true)
     AuthResponse toAuthResponse(User user, String token, List<String> roles, AuthStatus authStatus);
 
+    @Mapping(target = "next", ignore = true)
     RegistrationResponse toRegistrationResponse(User user);
 
     @Mapping(target = "message", source = "message")

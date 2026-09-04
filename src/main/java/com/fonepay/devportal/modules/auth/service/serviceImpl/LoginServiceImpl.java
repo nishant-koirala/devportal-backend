@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.fonepay.devportal.common.constant.AuthMessages;
 import com.fonepay.devportal.common.constant.enums.ActivityType;
 import com.fonepay.devportal.common.constant.enums.AuthStatus;
 import com.fonepay.devportal.common.constant.enums.UserStatus;
@@ -52,9 +53,6 @@ public class LoginServiceImpl implements LoginService {
     private final ActivityRecordingService activityRecordingService;
     private final RateLimitService rateLimitService;
 
-    @Value("${jwt.expiration-ms}")
-    private long jwtExpirationMs;
-
     @Value("${app.otp.expiration-minutes:5}")
     private int otpExpirationMinutes;
 
@@ -64,24 +62,24 @@ public class LoginServiceImpl implements LoginService {
         rateLimitService.checkAuthEmail(request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+                .orElseThrow(() -> new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             log.warn("Password mismatch for: {}", request.getEmail());
             activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, false);
-            throw new UnauthorizedException("Invalid email or password");
+            throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
         }
 
         if (user.getStatus() == UserStatus.DEACTIVATED) {
             log.warn("Login attempt for deactivated user: {}", user.getUserId());
             activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, false);
-            throw new UnauthorizedException("Account is deactivated. Please contact support.");
+            throw new UnauthorizedException(AuthMessages.DEACTIVATED);
         }
 
         if (!user.isEmailVerified() || user.getStatus() == UserStatus.PENDING) {
             log.warn("Login attempt for unverified user: {}", user.getUserId());
             activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, false);
-            throw new UnauthorizedException("Please verify your email address before logging in.");
+            throw new UnauthorizedException(AuthMessages.unverified(user.getEmail()));
         }
 
         Instant now = clock.instant();
@@ -107,9 +105,10 @@ public class LoginServiceImpl implements LoginService {
         }
 
         // Non-MFA: create session and issue JWT immediately
-        UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, jwtExpirationMs);
+        UserSession session = userSessionService.createSession(user.getUserId(), ipAddress, userAgent, roleNames);
         java.util.Set<String> permissions = userRoleService.getPermissionsByUserId(user.getUserId());
-        String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions);
+        String token = jwtUtil.generateToken(user, session.getSessionId(), roleNames, permissions,
+                session.getMaxExpiresAt());
         activityRecordingService.recordLogin(user.getUserId(), ipAddress, userAgent, true);
         return authMapper.toAuthResponse(user, token, roleNames, AuthStatus.LOGIN_SUCCESS);
     }
