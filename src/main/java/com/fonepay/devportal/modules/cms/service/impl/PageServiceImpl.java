@@ -38,6 +38,9 @@ import com.fonepay.devportal.modules.cms.service.AuditLogService;
 import com.fonepay.devportal.modules.cms.service.PageService;
 import com.fonepay.devportal.modules.cms.service.PageTreeBuilder;
 import com.fonepay.devportal.modules.cms.service.PublishService;
+import com.fonepay.devportal.modules.cms.service.RedirectService;
+import com.fonepay.devportal.modules.cms.repository.SectionRepository;
+import com.fonepay.devportal.modules.cms.document.Section;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +57,8 @@ public class PageServiceImpl implements PageService {
     private final PageMapper pageMapper;
     private final AuditLogService auditLogService;
     private final PublishService publishService;
+    private final RedirectService redirectService;
+    private final SectionRepository sectionRepository;
     private final Clock clock;
     private static final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
@@ -136,6 +141,9 @@ public class PageServiceImpl implements PageService {
                 throw new DuplicateResourceException(
                         "A page with slug '" + request.getSlug() + "' already exists for this product");
             }
+            String oldPath = buildFrontendPath(page.getProductId(), page.getSectionId(), page.getSlug());
+            String newPath = buildFrontendPath(page.getProductId(), page.getSectionId(), request.getSlug());
+            redirectService.createRedirect(page.getProductId(), pageId, oldPath, newPath);
             page.setSlug(request.getSlug());
         }
 
@@ -169,6 +177,9 @@ public class PageServiceImpl implements PageService {
                 throw new DuplicateResourceException(
                         "A page with slug '" + request.getSlug() + "' already exists for this product");
             }
+            String oldPath = buildFrontendPath(page.getProductId(), page.getSectionId(), page.getSlug());
+            String newPath = buildFrontendPath(page.getProductId(), page.getSectionId(), request.getSlug());
+            redirectService.createRedirect(page.getProductId(), pageId, oldPath, newPath);
             page.setSlug(request.getSlug());
         }
 
@@ -457,6 +468,20 @@ public class PageServiceImpl implements PageService {
         if (depth > MAX_TREE_DEPTH) {
             throw new BadRequestException("Page hierarchy exceeds maximum depth of " + MAX_TREE_DEPTH);
         }
+    }
+
+    private String buildFrontendPath(String productId, String sectionId, String pageSlug) {
+        Product product = mongoTemplate.findById(productId, Product.class);
+        String productSlug = product != null ? product.getSlug() : productId;
+        
+        if (sectionId == null || sectionId.isBlank()) {
+            return "/docs/" + productSlug + "/" + pageSlug;
+        }
+        
+        Section section = sectionRepository.findById(sectionId).orElse(null);
+        String sectionSlug = section != null ? section.getSlug() : sectionId;
+        
+        return "/docs/" + productSlug + "/" + sectionSlug + "/" + pageSlug;
     }
 
     private static String normalizeParentId(String parentId) {
