@@ -39,6 +39,7 @@ import com.fonepay.devportal.modules.cms.service.PageService;
 import com.fonepay.devportal.modules.cms.service.PageTreeBuilder;
 import com.fonepay.devportal.modules.cms.service.PublishService;
 import com.fonepay.devportal.modules.cms.service.RedirectService;
+import com.fonepay.devportal.modules.cms.service.RevisionService;
 import com.fonepay.devportal.modules.cms.repository.SectionRepository;
 import com.fonepay.devportal.modules.cms.document.Section;
 
@@ -58,6 +59,7 @@ public class PageServiceImpl implements PageService {
     private final AuditLogService auditLogService;
     private final PublishService publishService;
     private final RedirectService redirectService;
+    private final RevisionService revisionService;
     private final SectionRepository sectionRepository;
     private final Clock clock;
     private static final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
@@ -160,7 +162,7 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
-    public PageMetaResponse bulkSavePage(String pageId, BulkPageSaveRequest request) {
+    public PageMetaResponse bulkSavePage(String pageId, BulkPageSaveRequest request, String userId) {
         Page page = requirePage(pageId);
         if (page.getStatus() == PageStatus.ARCHIVED) {
             throw new BadRequestException("Cannot update an archived page");
@@ -189,11 +191,19 @@ public class PageServiceImpl implements PageService {
 
         page.setUpdatedAt(clock.instant());
 
+        if (request.getRelatedPageIds() != null) {
+            page.setRelatedPageIds(request.getRelatedPageIds());
+        }
+
         if (request.getDraftBlocks() != null) {
             page.setDraftBlocks(mapAndSanitizeBlocks(request.getDraftBlocks()));
         } else {
             page.setDraftBlocks(new ArrayList<>());
         }
+
+        // F20-49: Immutable Revisions
+        String commitMsg = request.getCommitMessage() != null ? request.getCommitMessage() : "Auto-save revision";
+        revisionService.createSnapshot(page.getId(), page.getDraftBlocks(), commitMsg, userId);
 
         try {
             Page saved = pageRepository.save(page);

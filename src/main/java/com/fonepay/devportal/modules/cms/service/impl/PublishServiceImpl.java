@@ -64,6 +64,26 @@ public class PublishServiceImpl implements PublishService {
                     "Only pages with IN_REVIEW status can be published. Current status: " + page.getStatus());
         }
 
+        // F20-49: Enforce cURL code sample validation for ENDPOINT pages
+        if (com.fonepay.devportal.modules.cms.enums.PageType.ENDPOINT.equals(page.getType())) {
+            boolean hasValidCurl = false;
+            if (page.getDraftBlocks() != null) {
+                for (Block block : page.getDraftBlocks()) {
+                    if (block.getData() instanceof com.fonepay.devportal.modules.cms.document.EndpointBlockData) {
+                        com.fonepay.devportal.modules.cms.document.EndpointBlockData endpointData = 
+                            (com.fonepay.devportal.modules.cms.document.EndpointBlockData) block.getData();
+                        if (endpointData.getCurlSample() != null && !endpointData.getCurlSample().trim().isEmpty()) {
+                            hasValidCurl = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!hasValidCurl) {
+                throw new BadRequestException("Cannot publish an ENDPOINT page without a valid cURL sample in its Endpoint Block.");
+            }
+        }
+
         List<Block> draftBlocks = page.getDraftBlocks() != null ? page.getDraftBlocks() : Collections.emptyList();
         List<Block> snapshotBlocks = new ArrayList<>(draftBlocks);
         page.setPublishedBlocks(snapshotBlocks);
@@ -117,6 +137,26 @@ public class PublishServiceImpl implements PublishService {
         List<PageMetaResponse> publishedPages = new ArrayList<>();
 
         for (Page page : pages) {
+            // F20-49: Enforce cURL code sample validation for ENDPOINT pages
+            if (com.fonepay.devportal.modules.cms.enums.PageType.ENDPOINT.equals(page.getType())) {
+                boolean hasValidCurl = false;
+                if (page.getDraftBlocks() != null) {
+                    for (Block block : page.getDraftBlocks()) {
+                        if (block.getData() instanceof com.fonepay.devportal.modules.cms.document.EndpointBlockData) {
+                            com.fonepay.devportal.modules.cms.document.EndpointBlockData endpointData = 
+                                (com.fonepay.devportal.modules.cms.document.EndpointBlockData) block.getData();
+                            if (endpointData.getCurlSample() != null && !endpointData.getCurlSample().trim().isEmpty()) {
+                                hasValidCurl = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!hasValidCurl) {
+                    throw new BadRequestException("Cannot publish an ENDPOINT page (ID: " + page.getId() + ") without a valid cURL sample in its Endpoint Block.");
+                }
+            }
+
             List<Block> draftBlocks = page.getDraftBlocks() != null ? page.getDraftBlocks() : Collections.emptyList();
             List<Block> snapshotBlocks = new ArrayList<>(draftBlocks);
             page.setPublishedBlocks(snapshotBlocks);

@@ -18,7 +18,7 @@ public interface PageService {
 
     PageMetaResponse updatePage(String pageId, UpdatePageRequest request);
 
-    PageMetaResponse bulkSavePage(String pageId, BulkPageSaveRequest request);
+    PageMetaResponse bulkSavePage(String pageId, BulkPageSaveRequest request, String userId);
 
     PageMetaResponse archivePage(String pageId);
 

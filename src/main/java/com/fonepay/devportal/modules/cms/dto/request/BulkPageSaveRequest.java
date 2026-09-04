@@ -32,4 +32,9 @@ public class BulkPageSaveRequest {
 
     @Valid
     private List<BlockDto> draftBlocks;
+
+    private String commitMessage;
+
+    @Size(max = 6, message = "A page can have at most 6 related pages")
+    private List<String> relatedPageIds;
 }

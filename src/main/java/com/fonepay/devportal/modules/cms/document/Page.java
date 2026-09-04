@@ -67,6 +67,9 @@ public class Page {
     @Field("published_blocks")
     private List<Block> publishedBlocks = new ArrayList<>();
 
+    @Field("related_page_ids")
+    private List<String> relatedPageIds = new ArrayList<>();
+
     @Field("created_at")
     private Instant createdAt;
 

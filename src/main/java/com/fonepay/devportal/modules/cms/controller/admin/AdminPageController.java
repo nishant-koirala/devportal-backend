@@ -39,6 +39,8 @@ import com.fonepay.devportal.modules.cms.dto.response.PageVersionResponse;
 import com.fonepay.devportal.modules.cms.service.BlockService;
 import com.fonepay.devportal.modules.cms.service.PageService;
 import com.fonepay.devportal.modules.cms.service.PublishService;
+import com.fonepay.devportal.modules.cms.service.RevisionService;
+import com.fonepay.devportal.modules.cms.document.Revision;
 import com.fonepay.devportal.modules.user.document.User;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,6 +60,7 @@ public class AdminPageController {
     private final PageService pageService;
     private final BlockService blockService;
     private final PublishService publishService;
+    private final RevisionService revisionService;
     private final Clock clock;
 
     @PostMapping(ApiRoutes.Cms.PRODUCT_PAGES)
@@ -147,9 +150,11 @@ public class AdminPageController {
     @PutMapping(ApiRoutes.Cms.PAGE_BY_ID)
     public ResponseEntity<ApiResponse<PageMetaResponse>> bulkSavePage(
             @PathVariable @NotBlank String pageId,
-            @Valid @RequestBody BulkPageSaveRequest request) {
+            @Valid @RequestBody BulkPageSaveRequest request,
+            Authentication authentication) {
 
-        PageMetaResponse response = pageService.bulkSavePage(pageId, request);
+        String adminId = extractAdminId(authentication);
+        PageMetaResponse response = pageService.bulkSavePage(pageId, request, adminId);
 
         return ResponseEntity.ok(
                 ApiResponse.<PageMetaResponse>builder()
@@ -391,6 +396,27 @@ public class AdminPageController {
                         .status(HttpStatus.OK.value())
                         .success(true)
                         .message("Page reverted to version " + versionNumber + " successfully")
+                        .data(response)
+                        .timestamp(LocalDateTime.now(clock))
+                        .build());
+    }
+
+    @PostMapping(ApiRoutes.Cms.PAGE_BY_ID + "/revisions/{version}/restore")
+    public ResponseEntity<ApiResponse<Revision>> restoreRevision(
+            @PathVariable @NotBlank String pageId,
+            @PathVariable int version,
+            Authentication authentication) {
+
+        String adminId = extractAdminId(authentication);
+        log.info("Restoring page {} to revision {} by admin {}", pageId, version, adminId);
+
+        Revision response = revisionService.revertToVersion(pageId, version, adminId);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Revision>builder()
+                        .status(HttpStatus.OK.value())
+                        .success(true)
+                        .message("Page draft restored to revision " + version + " successfully")
                         .data(response)
                         .timestamp(LocalDateTime.now(clock))
                         .build());
